@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"io"
 	"log"
 	"net"
 	"net/rpc"
@@ -45,13 +46,13 @@ func NewServer() *Server {
 // It inherits from rpc.ServerCodec, each handles one TCP stream,
 // so there's no concurrent call on it.
 type pegasusCodec struct {
-	conn net.Conn
+	conn io.ReadWriteCloser
 
 	dec *decoder
 }
 
 func (c *pegasusCodec) ReadRequestHeader(req *rpc.Request) error {
-	pegaReq, err := c.dec.readRequestMeta()
+	pegaReq, err := c.dec.readRequest()
 	if err != nil {
 		return err
 	}
@@ -62,23 +63,19 @@ func (c *pegasusCodec) ReadRequestHeader(req *rpc.Request) error {
 }
 
 func (c *pegasusCodec) ReadRequestBody(value interface{}) error {
-	if value == nil {
-
-	} else {
-
-	}
 	return nil
 }
 
 func (c *pegasusCodec) WriteResponse(*rpc.Response, interface{}) error {
-
+	return nil
 }
 
 func (c *pegasusCodec) Close() error {
 	return c.conn.Close()
 }
 
-func newCodec(conn net.Conn) rpc.ServerCodec {
+// conn is a network connection but asbtracted as a ReadWriteCloser here in order to do mock test.
+func newCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
 	return &pegasusCodec{
 		conn: conn,
 

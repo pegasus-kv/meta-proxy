@@ -67,9 +67,8 @@ type pegasusRequest struct {
 	args rpcRequestArgs
 }
 
-// readRequestMeta reads fully 48 bytes if the request is v0,
-// and reads the 16 bytes header with thrift_request_meta_v1 if the request is v1.
-func (d *decoder) readRequestMeta() (*pegasusRequest, error) {
+// readRequest reads fully the RPC request into pegasusRequest.
+func (d *decoder) readRequest() (*pegasusRequest, error) {
 	// read protocol flag
 	flag := make([]byte, 4)
 	_, err := io.ReadFull(d.reader, flag)
@@ -98,6 +97,7 @@ func (d *decoder) readRequestMeta() (*pegasusRequest, error) {
 func (d *decoder) readRequestV0() (*pegasusRequest, error) {
 	// |- hdr_length -|-  request_meta_v0  -|
 	// |- uint32(48) -|-      36bytes      -|
+	// |-           40bytes                -|
 
 	data := make([]byte, 40)
 	_, err := io.ReadFull(d.reader, data)
@@ -172,6 +172,7 @@ func (d *decoder) readRequestV1() (*pegasusRequest, error) {
 	return pegasusReq, nil
 }
 
+// The request body encoding is common in both v0/v1 RPC protocol.
 func (d *decoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error {
 	data := make([]byte, bodyLength)
 	_, err := io.ReadFull(d.reader, data)
@@ -187,8 +188,10 @@ func (d *decoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error 
 	}
 	req.seqID = uint64(seq)
 	req.methodName = name
-	// TODO(wutao): create Args via methodName
-
+	req.args, err = newRPCRequestArgs(name)
+	if err != nil {
+		return err
+	}
 	if err = req.args.Read(iprot); err != nil {
 		return err
 	}
