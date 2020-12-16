@@ -7,27 +7,21 @@ import (
 	"net/rpc"
 )
 
-// Server is the RPC server that can handle rDSN-protocol RPC requests.
-type Server struct {
-}
-
 // Serve blocks until the connection shutdown.
-func (s *Server) Serve() {
+func Serve() error {
 	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:34601")
 	if err != nil {
-		log.Fatal(err)
-		return
+		return err
 	}
 	listener, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		log.Fatal(err)
-		return
+		return err
 	}
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			log.Print("connection accept:", err.Error())
-			return
+			continue
 		}
 		// TODO(wutao): add metric for connections number
 		// TODO(wutao): add connections management
@@ -35,11 +29,6 @@ func (s *Server) Serve() {
 		// use one goroutine per connection
 		go rpc.ServeCodec(newCodec(conn))
 	}
-}
-
-// NewServer creates a meta-proxy server.
-func NewServer() *Server {
-	return &Server{}
 }
 
 // pegasusCodec implements the rDSN RPC protocol.
@@ -74,7 +63,7 @@ func (c *pegasusCodec) Close() error {
 	return c.conn.Close()
 }
 
-// conn is a network connection but asbtracted as a ReadWriteCloser here in order to do mock test.
+// conn is a network connection but abstracted as a ReadWriteCloser here in order to do mock test.
 func newCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
 	return &pegasusCodec{
 		conn: conn,

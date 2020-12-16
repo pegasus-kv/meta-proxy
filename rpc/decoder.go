@@ -91,7 +91,7 @@ func (d *decoder) readRequest() (*pegasusRequest, error) {
 	} else if hdrVersion == 1 {
 		return d.readRequestV1()
 	}
-	return nil, fmt.Errorf("invalid request header version: %s", hdrVersion)
+	return nil, fmt.Errorf("invalid request header version: %d", hdrVersion)
 }
 
 func (d *decoder) readRequestV0() (*pegasusRequest, error) {

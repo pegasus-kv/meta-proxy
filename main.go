@@ -1,12 +1,14 @@
 package main
 
-import(
-	 "github.com/pegasus-kv/meta-proxy/rpc"
+import (
+	"log"
+
+	"github.com/pegasus-kv/meta-proxy/rpc"
 )
 
-
 func main() {
-	server := rpc.NewServer()
-	server.Serve()
+	err := rpc.Serve()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
-
