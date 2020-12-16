@@ -63,8 +63,8 @@ type pegasusRequest struct {
 
 	methodName string
 	seqID      uint64
-
-	args rpcRequestArgs
+	args       RequestArgs
+	handler    MethodHandler
 }
 
 // readRequest reads fully the RPC request into pegasusRequest.
@@ -188,10 +188,12 @@ func (d *decoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error 
 	}
 	req.seqID = uint64(seq)
 	req.methodName = name
-	req.args, err = newRPCRequestArgs(name)
+	method, err := findMethodByName(name)
 	if err != nil {
 		return err
 	}
+	req.handler = method.Handler
+	req.args = method.RequestCreator()
 	if err = req.args.Read(iprot); err != nil {
 		return err
 	}
@@ -199,9 +201,4 @@ func (d *decoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error 
 		return err
 	}
 	return nil
-}
-
-type rpcRequestArgs interface {
-	String() string
-	Read(iprot thrift.TProtocol) error
 }

@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"bytes"
-	"net/rpc"
 	"testing"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
@@ -25,15 +24,15 @@ func newFakeConn(bs []byte) *fakeConn {
 }
 
 func TestServeCodec(t *testing.T) {
-	seqId := int32(1)
+	seqID := int32(1)
 	gpid := &base.Gpid{}
 	arg := rrdb.NewMetaQueryCfgArgs()
 	arg.Query = replication.NewQueryCfgRequest()
 	arg.Query.AppName = "test"
 	arg.Query.PartitionIndices = []int32{}
 
-	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), seqId, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
+	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), seqID, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
 
-	rpc.ServeCodec(newCodec(newFakeConn(rcall.RawReq)))
+	serveConn(newFakeConn(rcall.RawReq))
 }
