@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 )
 
 // Serve blocks until the connection shutdown.
@@ -41,9 +42,10 @@ func serveConn(conn io.ReadWriteCloser) {
 		writer: conn,
 	}
 
-	// `ctx` is the root of all sub-tasks.
-	// This connection exits only when all children are terminated.
+	// `ctx` is the root of all sub-tasks. It notifies the children to terminate
+	//  if the connection encounters some error.
 	ctx, cancel := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
 	for {
 		req, err := dec.readRequest()
 		if err != nil {
@@ -52,20 +54,26 @@ func serveConn(conn io.ReadWriteCloser) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
+			log.Printf("connection %s is closed", conn)
 			break
 		}
 
 		// Asynchronously execute RPC handler in order to not block the connection reading.
+		wg.Add(1)
 		go func() {
 			result := req.handler(ctx, req.args)
 			err := enc.sendResponse(req, result)
 			if err != nil {
 				log.Println(err)
 			}
+
+			wg.Done()
 		}()
 	}
 
 	// cancel the ongoing requests
 	cancel()
-	<-ctx.Done()
+
+	// This connection exits only when all children are terminated.
+	wg.Wait()
 }

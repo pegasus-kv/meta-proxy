@@ -14,15 +14,43 @@ import (
 
 // fakeConn implements interface io.ReadWriteCloser
 type fakeConn struct {
-	*bytes.Buffer
+	rbuf, wbuf *bytes.Buffer
 }
 
 func (*fakeConn) Close() error {
 	return nil
 }
 
-func newFakeConn(bs []byte) *fakeConn {
-	return &fakeConn{Buffer: bytes.NewBuffer(bs)}
+func (f *fakeConn) Read(p []byte) (int, error) {
+	return f.rbuf.Read(p)
+}
+
+func (f *fakeConn) Write(p []byte) (int, error) {
+	return f.wbuf.Write(p)
+}
+
+func newFakeConn(readBytes []byte) *fakeConn {
+	return &fakeConn{rbuf: bytes.NewBuffer(readBytes), wbuf: bytes.NewBuffer(nil)}
+}
+
+func testSetUpQueryConfigRPC(resp *replication.QueryCfgResponse) {
+	Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &MethodDefinition{
+		RequestCreator: func() RequestArgs {
+			return &rrdb.MetaQueryCfgArgs{
+				Query: replication.NewQueryCfgRequest(),
+			}
+		},
+		Handler: func(c context.Context, ra RequestArgs) ResponseResult {
+			return &rrdb.MetaQueryCfgResult{
+				Success: resp,
+			}
+		},
+	})
+}
+
+func testCleanupRPCRegsitration() {
+	// do cleanup after test
+	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
 }
 
 func TestDecoderReadRequest(t *testing.T) {
@@ -34,13 +62,7 @@ func TestDecoderReadRequest(t *testing.T) {
 	arg.Query.PartitionIndices = []int32{}
 
 	// register method
-	Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &MethodDefinition{
-		RequestCreator: func() RequestArgs {
-			return &rrdb.MetaQueryCfgArgs{
-				Query: replication.NewQueryCfgRequest(),
-			}
-		},
-	})
+	testSetUpQueryConfigRPC(nil)
 
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), seqID, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
@@ -58,8 +80,7 @@ func TestDecoderReadRequest(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, *queryCfgArg, *arg)
 
-	// do cleanup after test
-	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
+	testCleanupRPCRegsitration()
 }
 
 // TestDecoderHandleRequest ensures a request can invokes its corresponding method.
@@ -67,19 +88,9 @@ func TestDecoderHandleRequest(t *testing.T) {
 	arg := rrdb.NewMetaQueryCfgArgs()
 	arg.Query = replication.NewQueryCfgRequest()
 
-	Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &MethodDefinition{
-		RequestCreator: func() RequestArgs {
-			return &rrdb.MetaQueryCfgArgs{
-				Query: replication.NewQueryCfgRequest(),
-			}
-		},
-		Handler: func(c context.Context, ra RequestArgs) ResponseResult {
-			return &rrdb.MetaQueryCfgResult{
-				Success: &replication.QueryCfgResponse{
-					Err: &base.ErrorCode{Errno: base.ERR_INVALID_STATE.String()},
-				},
-			}
-		},
+	// QueryConfig definitely returns ERR_INVALID_STATE
+	testSetUpQueryConfigRPC(&replication.QueryCfgResponse{
+		Err: &base.ErrorCode{Errno: base.ERR_INVALID_STATE.String()},
 	})
 
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
@@ -92,8 +103,7 @@ func TestDecoderHandleRequest(t *testing.T) {
 	queryCfgResp := resp.(*rrdb.MetaQueryCfgResult)
 	assert.Equal(t, queryCfgResp.Success.Err.Errno, "ERR_INVALID_STATE")
 
-	// do cleanup after test
-	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
+	testCleanupRPCRegsitration()
 }
 
 func TestDecoderHandleUnsupportedRequest(t *testing.T) {
