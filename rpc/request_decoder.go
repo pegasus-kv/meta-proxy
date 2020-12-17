@@ -57,7 +57,7 @@ var pegasusProtocolFlag = []byte("THFT")
 //
 
 type pegasusRequest struct {
-	// reqv0/reqv1 can have only one to be non-nil.
+	// reqv0 / reqv1 can have only one to be non-nil.
 	reqv0 *requestV0
 	reqv1 *requestV1
 

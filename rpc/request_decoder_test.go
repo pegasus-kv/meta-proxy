@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// fakeConn implements interface io.ReadWriteCloser
 type fakeConn struct {
 	*bytes.Buffer
 }
