@@ -44,7 +44,7 @@ func TestDecoderReadRequest(t *testing.T) {
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), seqID, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
 
-	dec := &decoder{
+	dec := &requestDecoder{
 		reader: newFakeConn(rcall.RawReq),
 	}
 	req, err := dec.readRequest()
@@ -61,6 +61,7 @@ func TestDecoderReadRequest(t *testing.T) {
 	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
 }
 
+// TestDecoderHandleRequest ensures a request can invokes its corresponding method.
 func TestDecoderHandleRequest(t *testing.T) {
 	arg := rrdb.NewMetaQueryCfgArgs()
 	arg.Query = replication.NewQueryCfgRequest()
@@ -82,7 +83,7 @@ func TestDecoderHandleRequest(t *testing.T) {
 
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
-	dec := &decoder{reader: newFakeConn(rcall.RawReq)}
+	dec := &requestDecoder{reader: newFakeConn(rcall.RawReq)}
 	req, err := dec.readRequest()
 	assert.Nil(t, err)
 	resp := req.handler(context.Background(), req.args)

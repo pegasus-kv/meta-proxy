@@ -35,7 +35,7 @@ type requestV1 struct {
 	meta *ThriftRequestMetaV1
 }
 
-type decoder struct {
+type requestDecoder struct {
 	reader io.Reader
 }
 
@@ -68,7 +68,7 @@ type pegasusRequest struct {
 }
 
 // readRequest reads fully the RPC request into pegasusRequest.
-func (d *decoder) readRequest() (*pegasusRequest, error) {
+func (d *requestDecoder) readRequest() (*pegasusRequest, error) {
 	// read protocol flag
 	flag := make([]byte, 4)
 	_, err := io.ReadFull(d.reader, flag)
@@ -94,7 +94,7 @@ func (d *decoder) readRequest() (*pegasusRequest, error) {
 	return nil, fmt.Errorf("invalid request header version: %d", hdrVersion)
 }
 
-func (d *decoder) readRequestV0() (*pegasusRequest, error) {
+func (d *requestDecoder) readRequestV0() (*pegasusRequest, error) {
 	// |- hdr_length -|-  request_meta_v0  -|
 	// |- uint32(48) -|-      36bytes      -|
 	// |-           40bytes                -|
@@ -133,7 +133,7 @@ func (d *decoder) readRequestV0() (*pegasusRequest, error) {
 	return pegasusReq, nil
 }
 
-func (d *decoder) readRequestV1() (*pegasusRequest, error) {
+func (d *requestDecoder) readRequestV1() (*pegasusRequest, error) {
 	//	|- meta_length + body_length -|- thrift_request_meta_v1 -|- blob -|
 	//	|-   uint32    +    uint32   -|-      thrift struct     -|-      -|
 
@@ -173,7 +173,7 @@ func (d *decoder) readRequestV1() (*pegasusRequest, error) {
 }
 
 // The request body encoding is common in both v0/v1 RPC protocol.
-func (d *decoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error {
+func (d *requestDecoder) readRequestBody(req *pegasusRequest, bodyLength uint32) error {
 	data := make([]byte, bodyLength)
 	_, err := io.ReadFull(d.reader, data)
 	if err != nil {

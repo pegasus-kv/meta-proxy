@@ -34,8 +34,11 @@ func Serve() error {
 // conn is a network connection but abstracted as a ReadWriteCloser here in order to do mock test.
 // The caller typically invokes serveConn in a go statement.
 func serveConn(conn io.ReadWriteCloser) {
-	dec := &decoder{
+	dec := &requestDecoder{
 		reader: conn,
+	}
+	enc := &responseEncoder{
+		writer: conn,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -49,11 +52,10 @@ func serveConn(conn io.ReadWriteCloser) {
 			}
 			break
 		}
-		log.Println(req)
 
 		go func() {
 			result := req.handler(ctx, req.args)
-			err := sendResponse(result)
+			err := enc.sendResponse(req, result)
 			if err != nil {
 				log.Println(err)
 			}
@@ -65,8 +67,4 @@ func serveConn(conn io.ReadWriteCloser) {
 	select {
 	case <-ctx.Done():
 	}
-}
-
-func sendResponse(result ResponseResult) error {
-	return nil
 }
