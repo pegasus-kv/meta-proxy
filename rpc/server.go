@@ -28,13 +28,13 @@ func Serve() error {
 		// TODO(wutao): add connections management
 
 		// use one goroutine per connection
-		go serveConn(conn)
+		go serveConn(conn, conn.RemoteAddr().String())
 	}
 }
 
 // conn is a network connection but abstracted as a ReadWriteCloser here in order to do mock test.
 // The caller typically invokes serveConn in a go statement.
-func serveConn(conn io.ReadWriteCloser) {
+func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 	dec := &requestDecoder{
 		reader: conn,
 	}
@@ -54,7 +54,7 @@ func serveConn(conn io.ReadWriteCloser) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
-			log.Printf("connection %s is closed", conn)
+			log.Printf("connection %s is closed", remoteAddr)
 			break
 		}
 

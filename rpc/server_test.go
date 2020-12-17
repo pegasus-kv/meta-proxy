@@ -35,7 +35,7 @@ func TestServeConn(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		serveConn(conn)
+		serveConn(conn, "127.0.0.1:56789")
 		wg.Done()
 	}()
 	wg.Wait()
