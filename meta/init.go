@@ -8,7 +8,8 @@ import (
 	"github.com/pegasus-kv/meta-proxy/rpc"
 )
 
-func init() {
+// Init meta API registration.
+func Init() {
 	rpc.Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &rpc.MethodDefinition{
 		RequestCreator: func() rpc.RequestArgs {
 			return &rrdb.MetaQueryCfgArgs{

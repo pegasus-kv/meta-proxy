@@ -53,7 +53,10 @@ func serveConn(conn io.ReadWriteCloser) {
 
 		go func() {
 			result := req.handler(ctx, req.args)
-			sendResponse(result)
+			err := sendResponse(result)
+			if err != nil {
+				log.Println(err)
+			}
 		}()
 	}
 
