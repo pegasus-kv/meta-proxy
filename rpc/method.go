@@ -1,10 +1,15 @@
 package rpc
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
 )
+
+func init() {
+	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
+}
 
 // methodRegistry stores the mapping from RPC method name to the method definition.
 type methodRegistry struct {
@@ -26,7 +31,8 @@ func Register(name string, method *MethodDefinition) {
 	globalMethodRegistry.nameToMethod[name] = method
 }
 
-type MethodHandler func(RequestArgs) ResponseResult
+// MethodHandler handles a rpc request
+type MethodHandler func(context.Context, RequestArgs) ResponseResult
 
 // MethodDefinition defines the RPC method.
 type MethodDefinition struct {
@@ -35,11 +41,13 @@ type MethodDefinition struct {
 	Handler MethodHandler
 }
 
+// RequestArgs is any type of request.
 type RequestArgs interface {
 	String() string
 	Read(iprot thrift.TProtocol) error
 }
 
+// ResponseResult is any type of response.
 type ResponseResult interface {
 	String() string
 	Write(oprot thrift.TProtocol) error

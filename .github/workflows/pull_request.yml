@@ -1,0 +1,42 @@
+# workflow name
+name: Pull Request
+
+# on events
+on:
+  # run on each pull request
+  pull_request:
+    types: [synchronize, reopened]
+    branches:
+      - main
+      - ci-test # testing branch for github action
+
+# workflow tasks
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.29
+
+  build:
+      name: Build
+      runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          go-version: [1.13.x]
+      steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.14'
+      - name: Test
+        run: go test -race -v -test.timeout 2m -coverprofile=coverage.txt -covermode=atomic ./...
+      - uses: codecov/codecov-action@v1

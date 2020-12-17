@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"io"
 	"log"
 	"net"
@@ -37,19 +38,29 @@ func serveConn(conn io.ReadWriteCloser) {
 		reader: conn,
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	for {
 		req, err := dec.readRequest()
 		if err != nil {
 			if err != io.EOF {
+				log.Println(err)
+				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
 			break
 		}
+		log.Println(req)
 
 		go func() {
-			result := req.handler(req.args)
+			result := req.handler(ctx, req.args)
 			sendResponse(result)
 		}()
+	}
+
+	// cancel the ongoing requests
+	cancel()
+	select {
+	case <-ctx.Done():
 	}
 }
 
