@@ -37,7 +37,7 @@ type requestDecoder struct {
 	reader io.Reader
 }
 
-// pegasusProtocolFlag is a const flag to indentify if the RPC request is legal.
+// pegasusProtocolFlag is a const flag to identify if the RPC request is legal.
 var pegasusProtocolFlag = []byte("THFT")
 
 //

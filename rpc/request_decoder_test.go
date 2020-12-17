@@ -87,10 +87,22 @@ func TestDecoderHandleRequest(t *testing.T) {
 	dec := &requestDecoder{reader: newFakeConn(rcall.RawReq)}
 	req, err := dec.readRequest()
 	assert.Nil(t, err)
+
 	resp := req.handler(context.Background(), req.args)
 	queryCfgResp := resp.(*rrdb.MetaQueryCfgResult)
 	assert.Equal(t, queryCfgResp.Success.Err.Errno, "ERR_INVALID_STATE")
 
 	// do cleanup after test
 	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
+}
+
+func TestDecoderHandleUnsupportedRequest(t *testing.T) {
+	arg := rrdb.NewMetaQueryCfgArgs()
+	arg.Query = replication.NewQueryCfgRequest()
+
+	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
+	assert.Nil(t, err)
+	dec := &requestDecoder{reader: newFakeConn(rcall.RawReq)}
+	_, err = dec.readRequest()
+	assert.NotNil(t, err) // method-not-found
 }

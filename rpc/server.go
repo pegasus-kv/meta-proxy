@@ -41,6 +41,8 @@ func serveConn(conn io.ReadWriteCloser) {
 		writer: conn,
 	}
 
+	// `ctx` is the root of all sub-tasks.
+	// This connection exits only when all children are terminated.
 	ctx, cancel := context.WithCancel(context.Background())
 	for {
 		req, err := dec.readRequest()
@@ -53,6 +55,7 @@ func serveConn(conn io.ReadWriteCloser) {
 			break
 		}
 
+		// Asynchronously execute RPC handler in order to not block the connection reading.
 		go func() {
 			result := req.handler(ctx, req.args)
 			err := enc.sendResponse(req, result)
