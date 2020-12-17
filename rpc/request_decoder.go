@@ -13,19 +13,17 @@ type requestV0 struct {
 	hdrLength uint32 // always 48
 
 	meta *requestMetaV0
-
-	body []byte
 }
 
 type requestMetaV0 struct {
-	hdrCRC32            uint32
-	bodyLength          uint32
-	bodyCRC32           uint32
-	appID               uint32
-	partitionIndex      uint32
-	clientTimeout       uint32
-	clientThreadHash    uint32
-	clientPartitionHash uint64
+	/* hdrCRC32 int32 */ // unused
+	bodyLength           uint32
+	/* bodyCRC32 uint32 */ // unused
+	appID                  uint32
+	partitionIndex         uint32
+	clientTimeout          uint32
+	clientThreadHash       uint32
+	clientPartitionHash    uint64
 }
 
 type requestV1 struct {
@@ -75,7 +73,7 @@ func (d *requestDecoder) readRequest() (*pegasusRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Compare(flag, pegasusProtocolFlag) != 0 {
+	if !bytes.Equal(flag, pegasusProtocolFlag) {
 		return nil, fmt.Errorf("invalid rdsn rpc protocol: %s", flag)
 	}
 
@@ -162,6 +160,7 @@ func (d *requestDecoder) readRequestV1() (*pegasusRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	reqv1.meta = meta
 
 	// read request body
 	err = d.readRequestBody(pegasusReq, reqv1.bodyLength)

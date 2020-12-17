@@ -64,7 +64,5 @@ func serveConn(conn io.ReadWriteCloser) {
 
 	// cancel the ongoing requests
 	cancel()
-	select {
-	case <-ctx.Done():
-	}
+	<-ctx.Done()
 }
