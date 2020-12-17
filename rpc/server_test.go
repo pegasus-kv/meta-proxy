@@ -21,9 +21,14 @@ func TestServeConn(t *testing.T) {
 	}
 
 	rcall, _ := session.MarshallPegasusRpc(session.NewPegasusCodec(), int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
-	conn := newFakeConn(rcall.RawReq)
+	reqCnt := 50 // fill the connection with `reqCnt` requests to test robustness under concurrent case
+	var reqBuf []byte
+	for i := 0; i < reqCnt; i++ {
+		reqBuf = append(reqBuf, rcall.RawReq...)
+	}
+	conn := newFakeConn(reqBuf)
 
-	// QueryConfig returns a successful response
+	// QueryConfig always returns a successful response
 	resp := &replication.QueryCfgResponse{
 		Err:            &base.ErrorCode{Errno: "ERR_OK"},
 		AppID:          3,
@@ -42,11 +47,14 @@ func TestServeConn(t *testing.T) {
 
 	// conn.wbuf is the response bytes from server
 	assert.Greater(t, conn.wbuf.Len(), 0)
-	rcall, err := session.ReadRpcResponse(rpc.NewFakeRpcConn(conn.wbuf, nil), session.NewPegasusCodec())
-	assert.Nil(t, err)
-	queryCfgRes, ok := rcall.Result.(*rrdb.MetaQueryCfgResult)
-	assert.True(t, ok)
-	assert.Equal(t, *queryCfgRes.Success, *resp)
+	clientConn := rpc.NewFakeRpcConn(conn.wbuf, nil)
+	for i := 0; i < reqCnt; i++ {
+		rcall, err := session.ReadRpcResponse(clientConn, session.NewPegasusCodec())
+		assert.Nil(t, err)
+		queryCfgRes, ok := rcall.Result.(*rrdb.MetaQueryCfgResult)
+		assert.True(t, ok)
+		assert.Equal(t, *queryCfgRes.Success, *resp)
+	}
 
 	testCleanupRPCRegsitration()
 }
