@@ -11,6 +11,8 @@ import (
 )
 
 func Init() {
+	initClusterManager()
+
 	rpc.Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &rpc.MethodDefinition{
 		RequestCreator: func() rpc.RequestArgs {
 			return &rrdb.MetaQueryCfgArgs{
