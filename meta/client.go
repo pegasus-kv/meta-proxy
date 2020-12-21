@@ -35,10 +35,10 @@ func initClusterManager() {
 				addr := clusterManager.getClusterAddr(tableName)
 				clusterManager.Lock.Lock()
 				err := clusterManager.Tables.Set(tableName, addr)
+				clusterManager.Lock.Unlock()
 				if err != nil {
 					panic("TODO")
 				}
-				clusterManager.Lock.Unlock()
 			} else {
 				// TODO(jiashuo1)
 			}

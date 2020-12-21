@@ -52,7 +52,7 @@ func TestZookeeper(t *testing.T) {
 		panic(err)
 	}
 
-	// local cache will change the new meta addr
+	// local cache will change to new meta addr
 	time.Sleep(time.Duration(10000000))
 	cacheAddrs, _ = clusterManager.Tables.Get("temp")
 	assert.Equal(t, "127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603", cacheAddrs)
