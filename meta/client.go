@@ -12,32 +12,42 @@ import (
 	"github.com/samuel/go-zookeeper/zk"
 )
 
+// TODO(jiashuo) store config file
 var zkAddrs = []string{""}
-var zkTimeOut = 100000000000000
+var zkTimeOut = 1000000000
 var zkRoot = "/pegasus-cluster"
+var zkWatcherCount = 1024
 
 var clusterManager *ClusterManager
 
 type ClusterManager struct {
 	Lock   sync.Mutex
 	ZkConn *zk.Conn
-	// table->addrs
+	// table->Watcher
 	Tables gcache.Cache
 	// addrs->metaManager
 	Metas map[string]*session.MetaManager
+}
+
+type Watcher struct {
+	addrs string
+	event <-chan zk.Event
 }
 
 func initClusterManager() {
 	option := zk.WithEventCallback(func(event zk.Event) {
 		go func() {
 			if event.Type == zk.EventNodeDataChanged {
-				tableName := getTableName(event.Path) // TODO(jiashuo1) split to get table name
-				addr := clusterManager.getClusterAddr(tableName)
+				tableName := getTableName(event.Path)
+				metaAddrs, event := clusterManager.getClusterAddr(tableName)
 				clusterManager.Lock.Lock()
-				err := clusterManager.Tables.Set(tableName, addr)
+				err := clusterManager.Tables.Set(tableName, Watcher{
+					addrs: metaAddrs,
+					event: event,
+				})
 				clusterManager.Lock.Unlock()
 				if err != nil {
-					panic("TODO")
+					panic(err) // TODO(jiashuo) all the other panic will change to log
 				}
 			} else {
 				// TODO(jiashuo1)
@@ -50,7 +60,7 @@ func initClusterManager() {
 		panic(err)
 	}
 
-	tables := gcache.New(1028).LFU().Build() // TODO(jiashuo1) can set expire time
+	tables := gcache.New(zkWatcherCount).LFU().Build() // TODO(jiashuo1) can set expire time
 	clusterManager = &ClusterManager{
 		ZkConn: zkConn,
 		Tables: tables,
@@ -59,37 +69,42 @@ func initClusterManager() {
 }
 
 func (m *ClusterManager) getMetaConnector(table string) *session.MetaManager {
-	var meta *session.MetaManager
+	var metaConnector *session.MetaManager
 
-	metaAddrs, err := clusterManager.Tables.Get(table)
+	watcher, err := clusterManager.Tables.Get(table)
 	if err != nil {
 		// TODO(jiashuo) log
 		clusterManager.Lock.Lock()
-		metaAddrs, err = clusterManager.Tables.Get(table)
+		watcher, err = clusterManager.Tables.Get(table)
 		if err != nil {
-			metaAddrs = m.getClusterAddr(table)
-			err := clusterManager.Tables.Set(table, metaAddrs.(string))
+			metaAddrs, event := m.getClusterAddr(table)
+			watcher = Watcher{
+				addrs: metaAddrs,
+				event: event,
+			}
+			err := clusterManager.Tables.Set(table, watcher)
 			if err != nil {
 				clusterManager.Lock.Unlock()
 				panic(err)
 			}
 		}
 
-		meta = clusterManager.Metas[metaAddrs.(string)]
-		if meta == nil {
-			meta = session.NewMetaManager(str2slice(metaAddrs.(string)), session.NewNodeSession)
-			clusterManager.Metas[metaAddrs.(string)] = meta
+		metaAddrs := watcher.(Watcher).addrs
+		metaConnector = clusterManager.Metas[metaAddrs]
+		if metaConnector == nil {
+			metaConnector = session.NewMetaManager(getMetaAddrs(metaAddrs), session.NewNodeSession)
+			clusterManager.Metas[metaAddrs] = metaConnector
 		}
 
 		clusterManager.Lock.Unlock()
 	}
-	return meta
+	return metaConnector
 }
 
 // TODO(jiashuo) get cluster addr based table name
-func (m *ClusterManager) getClusterAddr(table string) string {
+func (m *ClusterManager) getClusterAddr(table string) (string, <-chan zk.Event) {
 	path := fmt.Sprintf("%s/%s", zkRoot, table)
-	value, _, _, err := clusterManager.ZkConn.GetW(path)
+	value, _, watcherEvent, err := clusterManager.ZkConn.GetW(path)
 	if err != nil {
 		panic(err) // TODO(jiashuo) log
 	}
@@ -105,10 +120,10 @@ func (m *ClusterManager) getClusterAddr(table string) string {
 		panic(err)
 	}
 
-	return tableInfo.MetaAddrs
+	return tableInfo.MetaAddrs, watcherEvent
 }
 
-func str2slice(meta string) []string {
+func getMetaAddrs(meta string) []string {
 	result := strings.Split(meta, ",")
 	if len(result) < 2 {
 		// TODO(jiashuo) pegalog.GetLogger().Fatal(fmt.Sprintf("Invalid meta address %s", meta))

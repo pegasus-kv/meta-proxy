@@ -8,15 +8,57 @@ import (
 )
 
 var testZkaddrs = []string{"127.0.0.1:22181"}
-var testTable = "temp"
-var tablePath = zkRoot + "/" + testTable
-var testData = "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"
+
+type testCase struct {
+	table string
+	addr  string
+	path  string
+	data  string
+}
+
+var tests = []testCase{
+	{
+		table: "temp",
+		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
+		path:  zkRoot + "/temp",
+		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
+	{
+		table: "stat",
+		addr:  "127.0.1.1:34601,127.0.1.1:34602,127.0.1.1:34603",
+		path:  zkRoot + "/stat",
+		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.1.1:34601,127.0.1.1:34602,127.0.1.1:34603\"}"},
+	{
+		table: "test",
+		addr:  "127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603",
+		path:  zkRoot + "/test",
+		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603\"}"},
+}
+
+type update struct {
+	addr string
+	data string
+}
+
+var updateData = []update{
+	{
+		addr: "128.0.0.1:34601,128.0.0.1:34602,128.0.0.1:34603",
+		data: "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"128.0.0.1:34601,128.0.0.1:34602,128.0.0.1:34603\"}",
+	},
+	{
+		addr: "128.0.1.1:34601,128.0.1.1:34602,128.0.1.1:34603",
+		data: "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"128.0.1.1:34601,128.0.1.1:34602,128.0.1.1:34603\"}",
+	},
+	{
+		addr: "128.1.1.1:34601,128.1.1.1:34602,128.1.1.1:34603",
+		data: "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"128.1.1.1:34601,128.1.1.1:34602,128.1.1.1:34603\"}",
+	},
+}
 
 func TestInit(t *testing.T) {
 	zkAddrs = testZkaddrs
+	zkWatcherCount = 2
 	initClusterManager()
 
-	var data = []byte(testData)
 	acls := zk.WorldACL(zk.PermAll)
 
 	ret, _, _, _ := clusterManager.ZkConn.ExistsW(zkRoot)
@@ -27,33 +69,41 @@ func TestInit(t *testing.T) {
 		}
 	}
 
-	ret, stat, _, _ := clusterManager.ZkConn.ExistsW(tablePath)
-	if ret {
-		_ = clusterManager.ZkConn.Delete(tablePath, stat.Version)
-	}
-	_, err := clusterManager.ZkConn.Create(tablePath, data, 0, acls)
-	if err != nil {
-		panic(err)
+	for _, test := range tests {
+		ret, stat, _, _ := clusterManager.ZkConn.ExistsW(test.path)
+		if ret {
+			_ = clusterManager.ZkConn.Delete(test.path, stat.Version)
+		}
+		_, err := clusterManager.ZkConn.Create(test.path, []byte(test.data), 0, acls)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
 func TestZookeeper(t *testing.T) {
-	addrs := clusterManager.getClusterAddr(testTable)
-	assert.Equal(t, "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603", addrs)
+	for _, test := range tests {
+		addrs, _ := clusterManager.getClusterAddr(test.table)
+		assert.Equal(t, test.addr, addrs)
 
-	clusterManager.getMetaConnector(testTable)
-	cacheAddrs, _ := clusterManager.Tables.Get("temp")
-	assert.Equal(t, "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603", cacheAddrs)
+		clusterManager.getMetaConnector(test.table)
+		cacheWatcher, _ := clusterManager.Tables.Get(test.table)
+		assert.Equal(t, test.addr, cacheWatcher.(Watcher).addrs)
 
-	// update zookeeper node data and trigger the watch event update local cache
-	newData := []byte("{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603\"}")
-	_, err := clusterManager.ZkConn.Set(tablePath, newData, 0)
-	if err != nil {
-		panic(err)
+		for _, update := range updateData {
+			// update zookeeper node data and trigger the watch event update local cache
+			_, stat, _ := clusterManager.ZkConn.Get(test.path)
+			_, err := clusterManager.ZkConn.Set(test.path, []byte(update.data), stat.Version)
+			if err != nil {
+				panic(err)
+			}
+
+			// local cache will change to new meta addr
+			time.Sleep(time.Duration(10000000))
+			cacheWatcher, _ = clusterManager.Tables.Get(test.table)
+			assert.Equal(t, update.addr, cacheWatcher.(Watcher).addrs)
+		}
 	}
 
-	// local cache will change to new meta addr
-	time.Sleep(time.Duration(10000000))
-	cacheAddrs, _ = clusterManager.Tables.Get("temp")
-	assert.Equal(t, "127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603", cacheAddrs)
+	assert.Equal(t, clusterManager.Tables.Len(true), 2)
 }
