@@ -54,13 +54,12 @@ var updateData = []update{
 	},
 }
 
-func TestInit(t *testing.T) {
+func init() {
 	zkAddrs = testZkaddrs
 	zkWatcherCount = 2
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
-
 	ret, _, _, _ := clusterManager.ZkConn.ExistsW(zkRoot)
 	if !ret {
 		_, err := clusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
@@ -83,12 +82,12 @@ func TestInit(t *testing.T) {
 
 func TestZookeeper(t *testing.T) {
 	for _, test := range tests {
-		addrs, _ := clusterManager.getClusterAddr(test.table)
-		assert.Equal(t, test.addr, addrs)
+		addrs, _ := clusterManager.getTableInfo(test.table)
+		assert.Equal(t, test.addr, addrs.metaAddrs)
 
-		clusterManager.getMetaConnector(test.table)
+		_, _ = clusterManager.getMetaConnector(test.table)
 		cacheWatcher, _ := clusterManager.Tables.Get(test.table)
-		assert.Equal(t, test.addr, cacheWatcher.(Watcher).addrs)
+		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWithWatcher).metaAddrs)
 
 		for _, update := range updateData {
 			// update zookeeper node data and trigger the watch event update local cache
@@ -101,7 +100,7 @@ func TestZookeeper(t *testing.T) {
 			// local cache will change to new meta addr
 			time.Sleep(time.Duration(10000000))
 			cacheWatcher, _ = clusterManager.Tables.Get(test.table)
-			assert.Equal(t, update.addr, cacheWatcher.(Watcher).addrs)
+			assert.Equal(t, update.addr, cacheWatcher.(*TableInfoWithWatcher).metaAddrs)
 		}
 	}
 

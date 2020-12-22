@@ -3,6 +3,7 @@ package meta
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -14,7 +15,7 @@ import (
 
 // TODO(jiashuo) store config file
 var zkAddrs = []string{""}
-var zkTimeOut = 1000000000
+var zkTimeOut = 1000000000 // unit ns, equal 1s
 var zkRoot = "/pegasus-cluster"
 var zkWatcherCount = 1024
 
@@ -23,44 +24,58 @@ var clusterManager *ClusterManager
 type ClusterManager struct {
 	Lock   sync.Mutex
 	ZkConn *zk.Conn
-	// table->Watcher
+	// table->TableInfoWithWatcher
 	Tables gcache.Cache
-	// addrs->metaManager
+	// metaAddrs->metaManager
 	Metas map[string]*session.MetaManager
 }
 
-type Watcher struct {
-	addrs string
-	event <-chan zk.Event
+type TableInfoWithWatcher struct {
+	clusterName string
+	metaAddrs   string
+	event       <-chan zk.Event
 }
 
 func initClusterManager() {
 	option := zk.WithEventCallback(func(event zk.Event) {
 		go func() {
+			tableName, err := getTableName(event.Path)
+			if err != nil {
+				return
+			}
 			if event.Type == zk.EventNodeDataChanged {
-				tableName := getTableName(event.Path)
-				metaAddrs, event := clusterManager.getClusterAddr(tableName)
+				tableInfo, err := clusterManager.getTableInfo(tableName)
+				if err != nil {
+					log.Printf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
+					return
+				}
+				log.Printf("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
 				clusterManager.Lock.Lock()
-				err := clusterManager.Tables.Set(tableName, Watcher{
-					addrs: metaAddrs,
-					event: event,
-				})
+				err = clusterManager.Tables.Set(tableName, tableInfo)
 				clusterManager.Lock.Unlock()
 				if err != nil {
-					panic(err) // TODO(jiashuo) all the other panic will change to log
+					log.Printf("[%s] cluster info local cache updated to %s(%s) failed: %s", tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
+				}
+			} else if event.Type == zk.EventNodeDeleted {
+				log.Printf("[%s] cluster info is removed.", tableName)
+				clusterManager.Lock.Lock()
+				success := clusterManager.Tables.Remove(tableName)
+				clusterManager.Lock.Unlock()
+				if !success {
+					log.Printf("[%s] cluster info local cache removed failed!", tableName)
 				}
 			} else {
-				// TODO(jiashuo1)
+				log.Printf("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
 			}
 		}()
 	})
 
 	zkConn, _, err := zk.Connect(zkAddrs, time.Duration(zkTimeOut), option)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("connect to %s failed: %s", zkAddrs, err))
 	}
 
-	tables := gcache.New(zkWatcherCount).LRU().Build() // TODO(jiashuo1) can set expire time
+	tables := gcache.New(zkWatcherCount).LRU().Build() // TODO(jiashuo1) consider set expire time
 	clusterManager = &ClusterManager{
 		ZkConn: zkConn,
 		Tables: tables,
@@ -68,75 +83,86 @@ func initClusterManager() {
 	}
 }
 
-func (m *ClusterManager) getMetaConnector(table string) *session.MetaManager {
+func (m *ClusterManager) getMetaConnector(table string) (*session.MetaManager, error) {
 	var metaConnector *session.MetaManager
 
-	watcher, err := clusterManager.Tables.Get(table)
-	if err != nil {
-		// TODO(jiashuo) log
-		clusterManager.Lock.Lock()
-		watcher, err = clusterManager.Tables.Get(table)
-
-		if err != nil {
-			metaAddrs, event := m.getClusterAddr(table)
-			watcher = Watcher{
-				addrs: metaAddrs,
-				event: event,
-			}
-			err := clusterManager.Tables.Set(table, watcher)
-			if err != nil {
-				clusterManager.Lock.Unlock()
-				panic(err)
-			}
+	tableInfo, err := clusterManager.Tables.Get(table)
+	if err == nil {
+		metaConnector = clusterManager.Metas[tableInfo.(*TableInfoWithWatcher).metaAddrs]
+		if metaConnector != nil {
+			return metaConnector, nil
 		}
-
-		metaAddrs := watcher.(Watcher).addrs
-		metaConnector = clusterManager.Metas[metaAddrs]
-		if metaConnector == nil {
-			metaConnector = session.NewMetaManager(getMetaAddrs(metaAddrs), session.NewNodeSession)
-			clusterManager.Metas[metaAddrs] = metaConnector
-		}
-
-		clusterManager.Lock.Unlock()
 	}
-	return metaConnector
+
+	log.Printf("[%s] can't get cluster info from local cache, try fetch from zk.", table)
+	clusterManager.Lock.Lock()
+	tableInfo, err = clusterManager.Tables.Get(table)
+	if err != nil {
+		tableInfo, err = m.getTableInfo(table)
+		if err != nil {
+			return nil, err
+		}
+		err = clusterManager.Tables.Set(table, tableInfo)
+		if err != nil {
+			log.Printf("[%s] cluster info update local cache failed: %s", table, err)
+		}
+	}
+
+	metaAddrs := tableInfo.(*TableInfoWithWatcher).metaAddrs
+	metaConnector = clusterManager.Metas[metaAddrs]
+	if metaConnector == nil {
+		metaList, err := getMetaList(metaAddrs)
+		if err != nil {
+			return nil, err
+		}
+		metaConnector = session.NewMetaManager(metaList, session.NewNodeSession)
+		clusterManager.Metas[metaAddrs] = metaConnector
+	}
+
+	clusterManager.Lock.Unlock()
+	return metaConnector, nil
 }
 
-// TODO(jiashuo) get cluster addr based table name
-func (m *ClusterManager) getClusterAddr(table string) (string, <-chan zk.Event) {
+// get table cluster info and watch it based table name from zk
+func (m *ClusterManager) getTableInfo(table string) (*TableInfoWithWatcher, error) {
 	path := fmt.Sprintf("%s/%s", zkRoot, table)
 	value, _, watcherEvent, err := clusterManager.ZkConn.GetW(path)
 	if err != nil {
-		panic(err) // TODO(jiashuo) log
+		return nil, fmt.Errorf("get table info from %s failed: %s", zkAddrs, err)
 	}
 
-	type tableInfoStruct struct {
-		ClusterName string `json:"cluster_name"`
-		MetaAddrs   string `json:"meta_addrs"`
+	type clusterInfoStruct struct {
+		Name      string `json:"cluster_name"`
+		MetaAddrs string `json:"meta_addrs"`
 	}
-
-	var tableInfo = &tableInfoStruct{}
-	err = json.Unmarshal(value, tableInfo)
+	var cluster = &clusterInfoStruct{}
+	err = json.Unmarshal(value, cluster)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("unmarshal json failed: %s", err)
 	}
 
-	return tableInfo.MetaAddrs, watcherEvent
+	tableInfo := TableInfoWithWatcher{
+		clusterName: cluster.Name,
+		metaAddrs:   cluster.MetaAddrs,
+		event:       watcherEvent,
+	}
+
+	return &tableInfo, nil
 }
 
-func getMetaAddrs(meta string) []string {
-	result := strings.Split(meta, ",")
+func getMetaList(metaAddrs string) ([]string, error) {
+	result := strings.Split(metaAddrs, ",")
 	if len(result) < 2 {
-		// TODO(jiashuo) pegalog.GetLogger().Fatal(fmt.Sprintf("Invalid meta address %s", meta))
+		return []string{}, fmt.Errorf("the meta addrs[%s] is invalid", metaAddrs)
 	}
-	return result
+	return result, nil
 }
 
-func getTableName(path string) string {
+func getTableName(path string) (string, error) {
 	result := strings.Split(path, "/")
 	if len(result) < 2 {
-		panic("")
+		return "", fmt.Errorf("the path[%s] is invalid", path)
 	}
 
-	return result[len(result)-1]
+	return result[len(result)-1], nil
 }

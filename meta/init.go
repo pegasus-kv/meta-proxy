@@ -6,7 +6,6 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
-	"github.com/XiaoMi/pegasus-go-client/pegalog"
 	"github.com/pegasus-kv/meta-proxy/rpc"
 )
 
@@ -26,18 +25,26 @@ func Init() {
 func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
-	resp, err := m.getMetaConnector(tableName).QueryConfig(ctx, tableName)
-	if err == nil {
+	meta, err := m.getMetaConnector(tableName)
+	if err != nil {
 		return &rrdb.MetaQueryCfgResult{
-			Success: resp,
+			Success: &replication.QueryCfgResponse{
+				Err: &base.ErrorCode{Errno: err.Error()},
+			},
 		}
 	}
 
-	errMsg := fmt.Sprintf("[%s]%s", tableName, err.Error())
-	pegalog.GetLogger().Fatal(errMsg) // TODO(jiashuo1)
+	resp, err := meta.QueryConfig(ctx, tableName)
+	if err != nil {
+		errMsg := fmt.Sprintf("[%s]%s", tableName, err.Error())
+		return &rrdb.MetaQueryCfgResult{
+			Success: &replication.QueryCfgResponse{
+				Err: &base.ErrorCode{Errno: errMsg},
+			},
+		}
+	}
+
 	return &rrdb.MetaQueryCfgResult{
-		Success: &replication.QueryCfgResponse{
-			Err: &base.ErrorCode{Errno: errMsg},
-		},
+		Success: resp,
 	}
 }
