@@ -60,7 +60,7 @@ func initClusterManager() {
 		panic(err)
 	}
 
-	tables := gcache.New(zkWatcherCount).LFU().Build() // TODO(jiashuo1) can set expire time
+	tables := gcache.New(zkWatcherCount).LRU().Build() // TODO(jiashuo1) can set expire time
 	clusterManager = &ClusterManager{
 		ZkConn: zkConn,
 		Tables: tables,
@@ -76,6 +76,7 @@ func (m *ClusterManager) getMetaConnector(table string) *session.MetaManager {
 		// TODO(jiashuo) log
 		clusterManager.Lock.Lock()
 		watcher, err = clusterManager.Tables.Get(table)
+
 		if err != nil {
 			metaAddrs, event := m.getClusterAddr(table)
 			watcher = Watcher{
