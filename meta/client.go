@@ -36,6 +36,7 @@ type TableInfoWithWatcher struct {
 	event       <-chan zk.Event
 }
 
+// TODO(jishuo1) may need change log module
 func initClusterManager() {
 	option := zk.WithEventCallback(func(event zk.Event) {
 		go func() {
