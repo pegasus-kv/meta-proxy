@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var testZkaddrs = []string{"127.0.0.1:22181"}
+var testZkAddrs = []string{"127.0.0.1:22181"}
 
 type testCase struct {
 	table string
@@ -39,7 +39,7 @@ type update struct {
 	data string
 }
 
-var updateData = []update{
+var updates = []update{
 	{
 		addr: "127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603",
 		data: "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.1.1.1:34601,127.1.1.1:34602,127.1.1.1:34603\"}",
@@ -55,7 +55,7 @@ var updateData = []update{
 }
 
 func init() {
-	zkAddrs = testZkaddrs
+	zkAddrs = testZkAddrs
 	zkWatcherCount = 2
 	initClusterManager()
 
@@ -89,7 +89,7 @@ func TestZookeeper(t *testing.T) {
 		cacheWatcher, _ := clusterManager.Tables.Get(test.table)
 		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWithWatcher).metaAddrs)
 
-		for _, update := range updateData {
+		for _, update := range updates {
 			// update zookeeper node data and trigger the watch event update local cache
 			_, stat, _ := clusterManager.ZkConn.Get(test.path)
 			_, err := clusterManager.ZkConn.Set(test.path, []byte(update.data), stat.Version)
