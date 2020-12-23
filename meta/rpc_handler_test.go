@@ -10,8 +10,6 @@ import (
 )
 
 func TestQueryConfig(t *testing.T) {
-	initClusterManager()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -20,5 +18,5 @@ func TestQueryConfig(t *testing.T) {
 	}
 	args.Query.AppName = "temp"
 	resp := clusterManager.queryConfig(ctx, args).(*rrdb.MetaQueryCfgResult)
-	assert.Equal(t, len(resp.Success.Partitions), 8)
+	assert.Equal(t, 8, len(resp.Success.Partitions))
 }
