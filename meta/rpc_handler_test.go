@@ -17,6 +17,6 @@ func TestQueryConfig(t *testing.T) {
 		Query: replication.NewQueryCfgRequest(),
 	}
 	args.Query.AppName = "temp"
-	resp := clusterManager.queryConfig(ctx, args).(*rrdb.MetaQueryCfgResult)
+	resp := globalClusterManager.queryConfig(ctx, args).(*rrdb.MetaQueryCfgResult)
 	assert.Equal(t, 8, len(resp.Success.Partitions))
 }

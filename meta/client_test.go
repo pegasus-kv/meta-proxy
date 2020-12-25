@@ -1,7 +1,7 @@
 package meta
 
 import (
-	"github.com/samuel/go-zookeeper/zk"
+	"github.com/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -60,20 +60,20 @@ func init() {
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
-	ret, _, _, _ := clusterManager.ZkConn.ExistsW(zkRoot)
+	ret, _, _ := globalClusterManager.ZkConn.Exists(zkRoot)
 	if !ret {
-		_, err := clusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		_, err := globalClusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	for _, test := range tests {
-		ret, stat, _, _ := clusterManager.ZkConn.ExistsW(test.path)
+		ret, stat, _ := globalClusterManager.ZkConn.Exists(test.path)
 		if ret {
-			_ = clusterManager.ZkConn.Delete(test.path, stat.Version)
+			_ = globalClusterManager.ZkConn.Delete(test.path, stat.Version)
 		}
-		_, err := clusterManager.ZkConn.Create(test.path, []byte(test.data), 0, acls)
+		_, err := globalClusterManager.ZkConn.Create(test.path, []byte(test.data), 0, acls)
 		if err != nil {
 			panic(err)
 		}
@@ -82,27 +82,27 @@ func init() {
 
 func TestZookeeper(t *testing.T) {
 	for _, test := range tests {
-		addrs, _ := clusterManager.getTableInfo(test.table)
+		addrs, _ := globalClusterManager.getTableInfo(test.table)
 		assert.Equal(t, test.addr, addrs.metaAddrs)
 
-		_, _ = clusterManager.getMetaConnector(test.table)
-		cacheWatcher, _ := clusterManager.Tables.Get(test.table)
-		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWithWatcher).metaAddrs)
+		_, _ = globalClusterManager.getMetaConnector(test.table)
+		cacheWatcher, _ := globalClusterManager.Tables.Get(test.table)
+		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)
 
 		for _, update := range updates {
 			// update zookeeper node data and trigger the watch event update local cache
-			_, stat, _ := clusterManager.ZkConn.Get(test.path)
-			_, err := clusterManager.ZkConn.Set(test.path, []byte(update.data), stat.Version)
+			_, stat, _ := globalClusterManager.ZkConn.Get(test.path)
+			_, err := globalClusterManager.ZkConn.Set(test.path, []byte(update.data), stat.Version)
 			if err != nil {
 				panic(err)
 			}
 
 			// local cache will change to new meta addr
 			time.Sleep(time.Duration(10000000))
-			cacheWatcher, _ = clusterManager.Tables.Get(test.table)
-			assert.Equal(t, update.addr, cacheWatcher.(*TableInfoWithWatcher).metaAddrs)
+			cacheWatcher, _ = globalClusterManager.Tables.Get(test.table)
+			assert.Equal(t, update.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)
 		}
 	}
 
-	assert.Equal(t, clusterManager.Tables.Len(true), 2)
+	assert.Equal(t, globalClusterManager.Tables.Len(true), 2)
 }

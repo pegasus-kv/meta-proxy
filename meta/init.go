@@ -2,8 +2,6 @@ package meta
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
@@ -19,33 +17,44 @@ func Init() {
 				Query: replication.NewQueryCfgRequest(),
 			}
 		},
-		Handler: clusterManager.queryConfig,
+		Handler: globalClusterManager.queryConfig,
 	})
 }
 
 func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
+	var dsnErrorCode base.DsnErrCode
+
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
 	meta, err := m.getMetaConnector(tableName)
 	if err != nil {
+		dsnErrorCode = parseToDsnErrCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
-				Err: &base.ErrorCode{Errno: err.Error()},
+				Err: &base.ErrorCode{Errno: dsnErrorCode.String()},
 			},
 		}
 	}
 
 	resp, err := meta.QueryConfig(ctx, tableName)
 	if err != nil {
-		errMsg := fmt.Sprintf("[%s]%s", tableName, err.Error())
+		dsnErrorCode = parseToDsnErrCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
-				Err: &base.ErrorCode{Errno: errMsg},
+				Err: &base.ErrorCode{Errno: dsnErrorCode.String()},
 			},
 		}
 	}
 
 	return &rrdb.MetaQueryCfgResult{
 		Success: resp,
+	}
+}
+
+func parseToDsnErrCode(err error) base.DsnErrCode {
+	if dsnErr, ok := err.(base.DsnErrCode); ok {
+		return dsnErr
+	} else {
+		return base.ERR_UNKNOWN
 	}
 }
