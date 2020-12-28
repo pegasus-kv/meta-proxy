@@ -81,7 +81,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 	defer m.Mut.Unlock()
 	tableInfo, err = m.Tables.Get(table)
 	if err != nil {
-		tableInfo, err = newTableInfo(table)
+		tableInfo, err = m.newTableInfo(table)
 		if err != nil {
 			logrus.Errorf("[%s] get table info failed: %s", table, err)
 			return nil, err
@@ -116,9 +116,9 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 //                           "cluster_name" : "clusterName",
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
 //                         }
-func newTableInfo(table string) (*TableInfoWatcher, error) {
+func(m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 	path := fmt.Sprintf("%s/%s", zkRoot, table)
-	value, _, watcherEvent, err := globalClusterManager.ZkConn.GetW(path)
+	value, _, watcherEvent, err := m.ZkConn.GetW(path)
 	if err != nil {
 		if err == zk.ErrNoNode {
 			logrus.Errorf("[%s] cluster info doesn't exist on zk[%s(%s)], err: %s", table, zkAddrs, path, err)
@@ -151,7 +151,7 @@ func newTableInfo(table string) (*TableInfoWatcher, error) {
 			cancel: cancel,
 		},
 	}
-	go watchTableInfoChanged(tableInfo)
+	go m.watchTableInfoChanged(tableInfo)
 
 	return tableInfo, nil
 }
@@ -178,7 +178,7 @@ func parseToTableName(path string) (string, error) {
 	return result[len(result)-1], nil
 }
 
-func watchTableInfoChanged(watcher *TableInfoWatcher) {
+func(m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 	select {
 	case event := <-watcher.event:
 		tableName, err := parseToTableName(event.Path)
@@ -186,7 +186,7 @@ func watchTableInfoChanged(watcher *TableInfoWatcher) {
 			logrus.Panicf("zk path \"%s\" is corrupt, unable to parse table name: %s", event.Path, err)
 		}
 		if event.Type == zk.EventNodeDataChanged {
-			tableInfo, err := newTableInfo(tableName)
+			tableInfo, err := m.newTableInfo(tableName)
 			if err != nil {
 				logrus.Errorf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
 				return

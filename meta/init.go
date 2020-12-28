@@ -17,16 +17,16 @@ func Init() {
 				Query: replication.NewQueryCfgRequest(),
 			}
 		},
-		Handler: globalClusterManager.queryConfig,
+		Handler: queryConfig,
 	})
 }
 
-func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
+func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 	var errorCode *base.ErrorCode
 
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
-	meta, err := m.getMeta(tableName)
+	meta, err := globalClusterManager.getMeta(tableName)
 	if err != nil {
 		errorCode = parseToErrorCode(err)
 		return &rrdb.MetaQueryCfgResult{
