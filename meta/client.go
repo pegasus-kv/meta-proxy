@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/sirupsen/logrus"
-	"log"
 	"strings"
 	"sync"
 	"time"
@@ -77,7 +76,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		}
 	}
 
-	log.Printf("[%s] can't get cluster info from local cache, try fetch from zk.", table)
+	logrus.Printf("[%s] can't get cluster info from local cache, try fetch from zk.", table)
 	globalClusterManager.Mut.Lock()
 	defer globalClusterManager.Mut.Unlock()
 	tableInfo, err = globalClusterManager.Tables.Get(table)
@@ -89,7 +88,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		}
 		err = globalClusterManager.Tables.Set(table, tableInfo)
 		if err != nil {
-			log.Printf("[%s] cluster info update local cache failed: %s", table, err)
+			logrus.Warnf("[%s] cluster info update local cache failed: %s", table, err)
 		}
 	}
 
@@ -187,27 +186,27 @@ func watchTableInfoChanged(watcher TableInfoWatcher) {
 		if event.Type == zk.EventNodeDataChanged {
 			tableInfo, err := globalClusterManager.getTableInfo(tableName)
 			if err != nil {
-				log.Printf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
+				logrus.Errorf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
 				return
 			}
-			log.Printf("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
+			logrus.Printf("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
 			globalClusterManager.Mut.Lock()
 			err = globalClusterManager.Tables.Set(tableName, tableInfo)
 			globalClusterManager.Mut.Unlock()
 			if err != nil {
-				log.Printf("[%s] cluster info local cache updated to %s(%s) failed: %s",
+				logrus.Errorf("[%s] cluster info local cache updated to %s(%s) failed: %s",
 					tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
 			}
 		} else if event.Type == zk.EventNodeDeleted {
-			log.Printf("[%s] cluster info is removed from zk", tableName)
+			logrus.Printf("[%s] cluster info is removed from zk", tableName)
 			globalClusterManager.Mut.Lock()
 			success := globalClusterManager.Tables.Remove(tableName)
 			globalClusterManager.Mut.Unlock()
 			if !success {
-				log.Printf("[%s] cluster info local cache removed failed!", tableName)
+				logrus.Errorf("[%s] cluster info local cache removed failed!", tableName)
 			}
 		} else {
-			log.Printf("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
+			logrus.Printf("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
 		}
 
 	case <-watcher.ctx.ctx.Done():
