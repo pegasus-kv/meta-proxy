@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/XiaoMi/pegasus-go-client/idl/base"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/bluele/gcache"
 	"github.com/go-zookeeper/zk"
+	"github.com/sirupsen/logrus"
 )
 
 // TODO(jiashuo) store config file
@@ -116,7 +116,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 //                           "cluster_name" : "clusterName",
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
 //                         }
-func(m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
+func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 	path := fmt.Sprintf("%s/%s", zkRoot, table)
 	value, _, watcherEvent, err := m.ZkConn.GetW(path)
 	if err != nil {
@@ -178,7 +178,7 @@ func parseToTableName(path string) (string, error) {
 	return result[len(result)-1], nil
 }
 
-func(m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
+func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 	select {
 	case event := <-watcher.event:
 		tableName, err := parseToTableName(event.Path)

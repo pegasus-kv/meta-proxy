@@ -2,11 +2,12 @@ package meta
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/go-zookeeper/zk"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 var testZkAddrs = []string{"127.0.0.1:22181"}
