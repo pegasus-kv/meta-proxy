@@ -59,23 +59,24 @@ var updates = []update{
 // init the zk data
 func init() {
 	zkAddrs = testZkAddrs
-	zkConn, _, _ := zk.Connect(zkAddrs, time.Duration(zkTimeOut))
+	zkWatcherCount = 2
+	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
-	ret, _, _ := zkConn.Exists(zkRoot)
+	ret, _, _ := globalClusterManager.ZkConn.Exists(zkRoot)
 	if !ret {
-		_, err := zkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
+		_, err := globalClusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	for _, test := range tests {
-		ret, stat, _ := zkConn.Exists(test.path)
+		ret, stat, _ := globalClusterManager.ZkConn.Exists(test.path)
 		if ret {
-			_ = zkConn.Delete(test.path, stat.Version)
+			_ = globalClusterManager.ZkConn.Delete(test.path, stat.Version)
 		}
-		_, err := zkConn.Create(test.path, []byte(test.data), 0, acls)
+		_, err := globalClusterManager.ZkConn.Create(test.path, []byte(test.data), 0, acls)
 		if err != nil {
 			panic(err)
 		}
@@ -113,8 +114,6 @@ func TestGetTable(t *testing.T) {
 
 func TestGetMetaConnector(t *testing.T) {
 	zkAddrs = testZkAddrs
-	zkWatcherCount = 2
-	initClusterManager()
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher
 	for _, test := range tests {
@@ -141,10 +140,6 @@ func TestGetMetaConnector(t *testing.T) {
 }
 
 func TestZookeeperUpdate(t *testing.T) {
-	zkAddrs = testZkAddrs
-	zkWatcherCount = 2
-	initClusterManager()
-
 	for _, test := range tests {
 		_, _ = globalClusterManager.getMetaConnector(test.table)
 		// update zookeeper node data and trigger the watch event update local cache
