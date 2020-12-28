@@ -63,6 +63,9 @@ func initClusterManager() {
 		Tables: tables,
 		Metas:  make(map[string]*session.MetaManager),
 	}
+
+	logrus.Infof("init cluster manager: zk=%s, zkTimeOut=%d, zkRoot=%s, zkWatcherCount=%d",
+		zkAddrs, zkTimeOut, zkRoot, zkWatcherCount)
 }
 
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
@@ -188,25 +191,25 @@ func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 		if event.Type == zk.EventNodeDataChanged {
 			tableInfo, err := m.newTableInfo(tableName)
 			if err != nil {
-				logrus.Errorf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
-				return
+				logrus.Panicf("[%s] get cluster info failed when trigger watcher: %s", tableName, err)
 			}
-			logrus.Infof("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
 			globalClusterManager.Mut.Lock()
 			err = globalClusterManager.Tables.Set(tableName, tableInfo)
 			globalClusterManager.Mut.Unlock()
 			if err != nil {
-				logrus.Errorf("[%s] cluster info local cache updated to %s(%s) failed: %s",
+				logrus.Panicf("[%s] local cache cluster info is updated to %s(%s) failed: %s",
 					tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
 			}
+			logrus.Infof("[%s] local cache cluster info is updated to %s(%s) succeed", tableName,
+				tableInfo.clusterName, tableInfo.metaAddrs)
 		} else if event.Type == zk.EventNodeDeleted {
-			logrus.Infof("[%s] cluster info is removed from zk", tableName)
 			globalClusterManager.Mut.Lock()
 			success := globalClusterManager.Tables.Remove(tableName)
 			globalClusterManager.Mut.Unlock()
 			if !success {
-				logrus.Errorf("[%s] cluster info local cache removed failed!", tableName)
+				logrus.Panicf("[%s] local cache cluster info is removed failed!", tableName)
 			}
+			logrus.Infof("[%s] local cache cluster info is removed succeed", tableName)
 		} else {
 			logrus.Infof("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
 		}
