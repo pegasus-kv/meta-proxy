@@ -159,28 +159,6 @@ func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 	return tableInfo, nil
 }
 
-func parseToMetaList(metaAddrs string) ([]string, error) {
-	result := strings.Split(metaAddrs, ",")
-	if len(result) < 2 {
-		return []string{}, fmt.Errorf("the meta addrs[%s] is invalid", metaAddrs)
-	}
-	return result, nil
-}
-
-// parseToTableName extracts table name from the zookeeper path.
-// The zookeeper path layout:
-// /<RegionPathRoot>
-//            /<table1> => {JSON}
-//            /<table2> => {JSON}
-func parseToTableName(path string) (string, error) {
-	result := strings.Split(path, "/")
-	if len(result) != 3 {
-		return "", fmt.Errorf("the path[%s] is invalid", path)
-	}
-
-	return result[len(result)-1], nil
-}
-
 func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 	select {
 	case event := <-watcher.event:
@@ -221,3 +199,26 @@ func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 		return
 	}
 }
+
+func parseToMetaList(metaAddrs string) ([]string, error) {
+	result := strings.Split(metaAddrs, ",")
+	if len(result) < 2 {
+		return []string{}, fmt.Errorf("the meta addrs[%s] is invalid", metaAddrs)
+	}
+	return result, nil
+}
+
+// parseToTableName extracts table name from the zookeeper path.
+// The zookeeper path layout:
+// /<RegionPathRoot>
+//            /<table1> => {JSON}
+//            /<table2> => {JSON}
+func parseToTableName(path string) (string, error) {
+	result := strings.Split(path, "/")
+	if len(result) != 3 {
+		return "", fmt.Errorf("the path[%s] is invalid", path)
+	}
+
+	return result[len(result)-1], nil
+}
+
