@@ -86,12 +86,12 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 	if err != nil {
 		tableInfo, err = m.newTableInfo(table)
 		if err != nil {
-			logrus.Errorf("[%s] get table info failed: %s", table, err)
+			logrus.Errorf("[%s] get cluster info failed: %s", table, err)
 			return nil, err
 		}
 		err = m.Tables.Set(table, tableInfo)
 		if err != nil {
-			logrus.Warnf("[%s] cluster info update local cache failed: %s", table, err)
+			logrus.Panicf("[%s] local cache cluster info is updated failed: %s", table, err)
 		}
 	}
 
@@ -193,9 +193,9 @@ func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 			if err != nil {
 				logrus.Panicf("[%s] get cluster info failed when trigger watcher: %s", tableName, err)
 			}
-			globalClusterManager.Mut.Lock()
-			err = globalClusterManager.Tables.Set(tableName, tableInfo)
-			globalClusterManager.Mut.Unlock()
+			m.Mut.Lock()
+			err = m.Tables.Set(tableName, tableInfo)
+			m.Mut.Unlock()
 			if err != nil {
 				logrus.Panicf("[%s] local cache cluster info is updated to %s(%s) failed: %s",
 					tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
@@ -203,12 +203,14 @@ func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 			logrus.Infof("[%s] local cache cluster info is updated to %s(%s) succeed", tableName,
 				tableInfo.clusterName, tableInfo.metaAddrs)
 		} else if event.Type == zk.EventNodeDeleted {
-			globalClusterManager.Mut.Lock()
-			success := globalClusterManager.Tables.Remove(tableName)
-			globalClusterManager.Mut.Unlock()
-			if !success {
-				logrus.Panicf("[%s] local cache cluster info is removed failed!", tableName)
+			m.Mut.Lock()
+			if m.Tables.Has(tableName) {
+				success := m.Tables.Remove(tableName)
+				if !success {
+					logrus.Panicf("[%s] local cache cluster info is removed failed!", tableName)
+				}
 			}
+			m.Mut.Unlock()
 			logrus.Infof("[%s] local cache cluster info is removed succeed", tableName)
 		} else {
 			logrus.Infof("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
