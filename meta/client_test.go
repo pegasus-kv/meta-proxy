@@ -86,7 +86,7 @@ func init() {
 func TestInitCluster(t *testing.T) {
 	// invalid zkAddrs
 	zkAddrs = []string{"12345678"}
-	assert.Panics(t, initClusterManager, "The code did not panic: "+zkAddrs[0])
+	assert.Panics(t, func() { initClusterManager() }, "The code did not panic: "+zkAddrs[0])
 	// valid zkAddrs
 	zkAddrs = testZkAddrs
 	initClusterManager()
@@ -117,7 +117,7 @@ func TestGetMetaConnector(t *testing.T) {
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher
 	for _, test := range tests {
-		_, _ = globalClusterManager.getMetaConnector(test.table)
+		_, _ = globalClusterManager.getMeta(test.table)
 		cacheWatcher, _ := globalClusterManager.Tables.Get(test.table)
 		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)
 	}
@@ -133,7 +133,7 @@ func TestGetMetaConnector(t *testing.T) {
 		} else {
 			assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)
 			assert.NotNil(t, globalClusterManager.Metas[test.addr])
-			meta, _ := globalClusterManager.getMetaConnector(test.table)
+			meta, _ := globalClusterManager.getMeta(test.table)
 			assert.NotNil(t, meta)
 		}
 	}
@@ -141,7 +141,7 @@ func TestGetMetaConnector(t *testing.T) {
 
 func TestZookeeperUpdate(t *testing.T) {
 	for _, test := range tests {
-		_, _ = globalClusterManager.getMetaConnector(test.table)
+		_, _ = globalClusterManager.getMeta(test.table)
 		// update zookeeper node data and trigger the watch event update local cache
 		for _, update := range updates {
 			_, stat, _ := globalClusterManager.ZkConn.Get(test.path)

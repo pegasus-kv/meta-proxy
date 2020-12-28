@@ -33,7 +33,9 @@ type ClusterManager struct {
 	Metas map[string]*session.MetaManager
 }
 
-type Context struct {
+// zkContext cancels the goroutine that's watching the zkNode, when the watcher
+// is evicted by LRU.
+type zkContext struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 }
@@ -43,19 +45,19 @@ type TableInfoWatcher struct {
 	clusterName string
 	metaAddrs   string
 	event       <-chan zk.Event
-	context     Context
+	ctx         zkContext
 }
 
 // TODO(jishuo1) change log module
 func initClusterManager() {
 	zkConn, _, err := zk.Connect(zkAddrs, time.Duration(zkTimeOut))
 	if err != nil {
-		panic(fmt.Errorf("connect to %s failed: %s", zkAddrs, err))
+		logrus.Panicf("failed to connect to zookeeper \"%s\": %s", zkAddrs, err)
 	}
 
 	tables := gcache.New(zkWatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
-		value.(*TableInfoWatcher).context.cancel()
-		logrus.Warnf("table cache has exceeded %d and remove the oldest table[%s]", zkWatcherCount, key.(string))
+		value.(*TableInfoWatcher).ctx.cancel()
+		logrus.Warnf("table [%s] evicted from table cache (capacity: %d)", key.(string), zkWatcherCount)
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,
@@ -64,19 +66,20 @@ func initClusterManager() {
 	}
 }
 
-func (m *ClusterManager) getMetaConnector(table string) (*session.MetaManager, error) {
-	var metaConnector *session.MetaManager
+func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
+	var meta *session.MetaManager
 
 	tableInfo, err := globalClusterManager.Tables.Get(table)
 	if err == nil {
-		metaConnector = globalClusterManager.Metas[tableInfo.(*TableInfoWatcher).metaAddrs]
-		if metaConnector != nil {
-			return metaConnector, nil
+		meta = globalClusterManager.Metas[tableInfo.(*TableInfoWatcher).metaAddrs]
+		if meta != nil {
+			return meta, nil
 		}
 	}
 
 	log.Printf("[%s] can't get cluster info from local cache, try fetch from zk.", table)
 	globalClusterManager.Mut.Lock()
+	defer globalClusterManager.Mut.Unlock()
 	tableInfo, err = globalClusterManager.Tables.Get(table)
 	if err != nil {
 		tableInfo, err = m.getTableInfo(table)
@@ -91,19 +94,18 @@ func (m *ClusterManager) getMetaConnector(table string) (*session.MetaManager, e
 	}
 
 	metaAddrs := tableInfo.(*TableInfoWatcher).metaAddrs
-	metaConnector = globalClusterManager.Metas[metaAddrs]
-	if metaConnector == nil {
+	meta = globalClusterManager.Metas[metaAddrs]
+	if meta == nil {
 		metaList, err := parseToMetaList(metaAddrs)
 		if err != nil {
 			logrus.Errorf("The table[%s] cluster addr[%s] format is err: %s", table, metaAddrs, err)
 			return nil, base.ERR_INVALID_DATA
 		}
-		metaConnector = session.NewMetaManager(metaList, session.NewNodeSession)
-		globalClusterManager.Metas[metaAddrs] = metaConnector
+		meta = session.NewMetaManager(metaList, session.NewNodeSession)
+		globalClusterManager.Metas[metaAddrs] = meta
 	}
 
-	globalClusterManager.Mut.Unlock()
-	return metaConnector, nil
+	return meta, nil
 }
 
 // get table cluster info and watch it based table name from zk
@@ -143,7 +145,7 @@ func (m *ClusterManager) getTableInfo(table string) (*TableInfoWatcher, error) {
 		clusterName: cluster.Name,
 		metaAddrs:   cluster.MetaAddrs,
 		event:       watcherEvent,
-		context: Context{
+		ctx: zkContext{
 			ctx:    ctx,
 			cancel: cancel,
 		},
@@ -208,7 +210,7 @@ func watchTableInfoChanged(watcher TableInfoWatcher) {
 			log.Printf("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
 		}
 
-	case <-watcher.context.ctx.Done():
+	case <-watcher.ctx.ctx.Done():
 		logrus.Warnf("table[%s] watcher is canceled from cache", watcher.tableName)
 		return
 	}

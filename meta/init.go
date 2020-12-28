@@ -22,26 +22,26 @@ func Init() {
 }
 
 func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
-	var dsnErrorCode base.DsnErrCode
+	var errorCode *base.ErrorCode
 
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
-	meta, err := m.getMetaConnector(tableName)
+	meta, err := m.getMeta(tableName)
 	if err != nil {
-		dsnErrorCode = parseToDsnErrCode(err)
+		errorCode = parseToDsnErrCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
-				Err: &base.ErrorCode{Errno: dsnErrorCode.String()},
+				Err: errorCode,
 			},
 		}
 	}
 
 	resp, err := meta.QueryConfig(ctx, tableName)
 	if err != nil {
-		dsnErrorCode = parseToDsnErrCode(err)
+		errorCode = parseToDsnErrCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
-				Err: &base.ErrorCode{Errno: dsnErrorCode.String()},
+				Err: errorCode,
 			},
 		}
 	}
@@ -51,10 +51,10 @@ func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) 
 	}
 }
 
-func parseToDsnErrCode(err error) base.DsnErrCode {
+func parseToDsnErrCode(err error) *base.ErrorCode {
 	if dsnErr, ok := err.(base.DsnErrCode); ok {
-		return dsnErr
+		return &base.ErrorCode{Errno: dsnErr.String()}
 	} else {
-		return base.ERR_UNKNOWN
+		return &base.ErrorCode{Errno: base.ERR_UNKNOWN.String()}
 	}
 }
