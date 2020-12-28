@@ -91,7 +91,8 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		}
 		err = m.Tables.Set(table, tableInfo)
 		if err != nil {
-			logrus.Panicf("[%s] local cache cluster info is updated failed: %s", table, err)
+			logrus.Errorf("[%s] local cache cluster info is updated failed: %s", table, err)
+			return nil, base.ERR_INVALID_DATA
 		}
 	}
 
@@ -100,7 +101,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 	if meta == nil {
 		metaList, err := parseToMetaList(metaAddrs)
 		if err != nil {
-			logrus.Errorf("[%s] cluster addr[%s] format is err: %s", table, metaAddrs, err)
+			logrus.Errorf("[%s] cluster addr[%s] format is err[%s]: %s", table, metaAddrs, err)
 			return nil, base.ERR_INVALID_DATA
 		}
 		meta = session.NewMetaManager(metaList, session.NewNodeSession)
