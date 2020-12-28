@@ -64,8 +64,8 @@ func initClusterManager() {
 		Metas:  make(map[string]*session.MetaManager),
 	}
 
-	logrus.Infof("init cluster manager: zk=%s, zkTimeOut=%d, zkRoot=%s, zkWatcherCount=%d",
-		zkAddrs, zkTimeOut, zkRoot, zkWatcherCount)
+	logrus.Infof("init cluster manager: zk=%s, zkTimeOut=%d(ms), zkRoot=%s, zkWatcherCount=%d",
+		zkAddrs, zkTimeOut/(1000*1000), zkRoot, zkWatcherCount)
 }
 
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
