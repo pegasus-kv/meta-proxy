@@ -221,4 +221,3 @@ func parseToTableName(path string) (string, error) {
 
 	return result[len(result)-1], nil
 }
-
