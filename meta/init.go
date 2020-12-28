@@ -28,7 +28,7 @@ func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) 
 	tableName := queryCfgArgs.Query.AppName
 	meta, err := m.getMeta(tableName)
 	if err != nil {
-		errorCode = parseToDsnErrCode(err)
+		errorCode = parseToErrorCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
 				Err: errorCode,
@@ -38,7 +38,7 @@ func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) 
 
 	resp, err := meta.QueryConfig(ctx, tableName)
 	if err != nil {
-		errorCode = parseToDsnErrCode(err)
+		errorCode = parseToErrorCode(err)
 		return &rrdb.MetaQueryCfgResult{
 			Success: &replication.QueryCfgResponse{
 				Err: errorCode,
@@ -51,7 +51,7 @@ func (m *ClusterManager) queryConfig(ctx context.Context, args rpc.RequestArgs) 
 	}
 }
 
-func parseToDsnErrCode(err error) *base.ErrorCode {
+func parseToErrorCode(err error) *base.ErrorCode {
 	if dsnErr, ok := err.(base.DsnErrCode); ok {
 		return &base.ErrorCode{Errno: dsnErr.String()}
 	} else {

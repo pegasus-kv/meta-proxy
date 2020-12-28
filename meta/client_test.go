@@ -83,16 +83,6 @@ func init() {
 	}
 }
 
-func TestInitCluster(t *testing.T) {
-	// invalid zkAddrs
-	zkAddrs = []string{"12345678"}
-	assert.Panics(t, func() { initClusterManager() }, "The code did not panic: "+zkAddrs[0])
-	// valid zkAddrs
-	zkAddrs = testZkAddrs
-	initClusterManager()
-	assert.NotNil(t, globalClusterManager)
-}
-
 func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
 	zkAddrs = []string{"128.0.0.1:22171"}
