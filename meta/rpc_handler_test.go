@@ -10,6 +10,8 @@ import (
 )
 
 func TestQueryConfig(t *testing.T) {
+	initClusterManager()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 

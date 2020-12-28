@@ -108,7 +108,7 @@ func (m *ClusterManager) getMetaConnector(table string) (*session.MetaManager, e
 
 // get table cluster info and watch it based table name from zk
 // The zookeeper path layout:
-// <RegionPathRoot>/<table> =>
+// /<RegionPathRoot>/<table> =>
 //                         {
 //                           "cluster_name" : "clusterName",
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
@@ -119,7 +119,7 @@ func (m *ClusterManager) getTableInfo(table string) (*TableInfoWatcher, error) {
 	if err != nil {
 		if err == zk.ErrNoNode {
 			logrus.Errorf("the table[%s] info doesn't exist on zk[%s], err: %s", table, path, err)
-			return nil, base.ERR_CLUSTER_NOT_FOUND
+			return nil, base.ERR_OBJECT_NOT_FOUND
 		} else {
 			logrus.Errorf("get table[%s] info from zk[%s] failed: %s", table, path, err)
 			return nil, base.ERR_ZOOKEEPER_OPERATION
@@ -163,12 +163,12 @@ func parseToMetaList(metaAddrs string) ([]string, error) {
 
 // parseToTableName extracts table name from the zookeeper path.
 // The zookeeper path layout:
-// <RegionPathRoot>
+// /<RegionPathRoot>
 //            /<table1> => {JSON}
 //            /<table2> => {JSON}
 func parseToTableName(path string) (string, error) {
 	result := strings.Split(path, "/")
-	if len(result) < 2 {
+	if len(result) != 3 {
 		return "", fmt.Errorf("the path[%s] is invalid", path)
 	}
 
