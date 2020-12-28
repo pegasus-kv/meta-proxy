@@ -68,20 +68,20 @@ func initClusterManager() {
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 	var meta *session.MetaManager
 
-	tableInfo, err := globalClusterManager.Tables.Get(table)
+	tableInfo, err := m.Tables.Get(table)
 	if err == nil {
-		meta = globalClusterManager.Metas[tableInfo.(*TableInfoWatcher).metaAddrs]
+		meta = m.Metas[tableInfo.(*TableInfoWatcher).metaAddrs]
 		if meta != nil {
 			return meta, nil
 		}
 	}
 
-	logrus.Printf("[%s] can't get cluster info from local cache, try fetch from zk.", table)
-	globalClusterManager.Mut.Lock()
+	logrus.Infof("[%s] can't get cluster info from local cache, try fetch from zk.", table)
+	m.Mut.Lock()
 	defer globalClusterManager.Mut.Unlock()
 	tableInfo, err = globalClusterManager.Tables.Get(table)
 	if err != nil {
-		tableInfo, err = m.getTableInfo(table)
+		tableInfo, err = newTableInfo(table)
 		if err != nil {
 			logrus.Errorf("get table[%s] info failed: %s", table, err)
 			return nil, err
@@ -114,7 +114,7 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 //                           "cluster_name" : "clusterName",
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
 //                         }
-func (m *ClusterManager) getTableInfo(table string) (*TableInfoWatcher, error) {
+func newTableInfo(table string) (*TableInfoWatcher, error) {
 	path := fmt.Sprintf("%s/%s", zkRoot, table)
 	value, _, watcherEvent, err := globalClusterManager.ZkConn.GetW(path)
 	if err != nil {
@@ -138,8 +138,9 @@ func (m *ClusterManager) getTableInfo(table string) (*TableInfoWatcher, error) {
 		return nil, base.ERR_INVALID_DATA
 	}
 
+	logrus.Infof("fetch [%s] cluster info[%s(%s)] on zk[%s] and add watcher succeed", table, cluster.Name, cluster.MetaAddrs, path)
 	ctx, cancel := context.WithCancel(context.Background())
-	tableInfo := TableInfoWatcher{
+	tableInfo := &TableInfoWatcher{
 		tableName:   table,
 		clusterName: cluster.Name,
 		metaAddrs:   cluster.MetaAddrs,
@@ -151,7 +152,7 @@ func (m *ClusterManager) getTableInfo(table string) (*TableInfoWatcher, error) {
 	}
 	go watchTableInfoChanged(tableInfo)
 
-	return &tableInfo, nil
+	return tableInfo, nil
 }
 
 func parseToMetaList(metaAddrs string) ([]string, error) {
@@ -176,7 +177,7 @@ func parseToTableName(path string) (string, error) {
 	return result[len(result)-1], nil
 }
 
-func watchTableInfoChanged(watcher TableInfoWatcher) {
+func watchTableInfoChanged(watcher *TableInfoWatcher) {
 	select {
 	case event := <-watcher.event:
 		tableName, err := parseToTableName(event.Path)
@@ -184,12 +185,12 @@ func watchTableInfoChanged(watcher TableInfoWatcher) {
 			logrus.Panicf("zk path \"%s\" is corrupt, unable to parse table name: %s", event.Path, err)
 		}
 		if event.Type == zk.EventNodeDataChanged {
-			tableInfo, err := globalClusterManager.getTableInfo(tableName)
+			tableInfo, err := newTableInfo(tableName)
 			if err != nil {
 				logrus.Errorf("[%s] get cluster info failed when triger watcher: %s", tableName, err)
 				return
 			}
-			logrus.Printf("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
+			logrus.Infof("[%s] cluster info is updated to %s(%s)", tableName, tableInfo.clusterName, tableInfo.metaAddrs)
 			globalClusterManager.Mut.Lock()
 			err = globalClusterManager.Tables.Set(tableName, tableInfo)
 			globalClusterManager.Mut.Unlock()
@@ -198,7 +199,7 @@ func watchTableInfoChanged(watcher TableInfoWatcher) {
 					tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
 			}
 		} else if event.Type == zk.EventNodeDeleted {
-			logrus.Printf("[%s] cluster info is removed from zk", tableName)
+			logrus.Infof("[%s] cluster info is removed from zk", tableName)
 			globalClusterManager.Mut.Lock()
 			success := globalClusterManager.Tables.Remove(tableName)
 			globalClusterManager.Mut.Unlock()
@@ -206,7 +207,7 @@ func watchTableInfoChanged(watcher TableInfoWatcher) {
 				logrus.Errorf("[%s] cluster info local cache removed failed!", tableName)
 			}
 		} else {
-			logrus.Printf("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
+			logrus.Infof("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
 		}
 
 	case <-watcher.ctx.ctx.Done():

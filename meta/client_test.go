@@ -87,17 +87,17 @@ func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
 	zkAddrs = []string{"128.0.0.1:22171"}
 	initClusterManager()
-	_, err := globalClusterManager.getTableInfo("notExist")
+	_, err := newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_ZOOKEEPER_OPERATION)
 
 	zkAddrs = testZkAddrs
 	initClusterManager()
 	// pass not existed table name
-	_, err = globalClusterManager.getTableInfo("notExist")
+	_, err = newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_OBJECT_NOT_FOUND)
 	// pass exist table
 	for _, test := range tests {
-		addrs, _ := globalClusterManager.getTableInfo(test.table)
+		addrs, _ := newTableInfo(test.table)
 		assert.Equal(t, test.addr, addrs.metaAddrs)
 	}
 }
