@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"io"
 	"log"
 	"net"
@@ -21,7 +22,7 @@ func Serve() error {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Print("connection accept:", err.Error())
+			logrus.Infof("connection accept: %s", err)
 			continue
 		}
 		// TODO(wutao): add metric for connections number
@@ -54,7 +55,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
-			log.Printf("connection %s is closed", remoteAddr)
+			logrus.Infof("connection %s is closed", remoteAddr)
 			break
 		}
 
@@ -64,7 +65,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 			result := req.handler(ctx, req.args)
 			err := enc.sendResponse(req, result)
 			if err != nil {
-				log.Println(err)
+				logrus.Info(err)
 			}
 
 			wg.Done()
