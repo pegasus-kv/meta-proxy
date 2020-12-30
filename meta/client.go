@@ -108,8 +108,6 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		m.Metas[metaAddrs] = meta
 	}
 
-	logrus.Infof("[%s] cluster info[%s(%s)] fetched from zk[%s]", table,
-		tableInfoW.clusterName, tableInfoW.metaAddrs, zkAddrs)
 	return meta, nil
 }
 
