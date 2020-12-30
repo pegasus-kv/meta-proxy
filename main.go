@@ -1,18 +1,21 @@
 package main
 
 import (
-	"log"
-
 	"github.com/pegasus-kv/meta-proxy/meta"
 	"github.com/pegasus-kv/meta-proxy/rpc"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func main() {
-
+	logrus.SetOutput(&lumberjack.Logger{
+		Filename:  "meta-proxy.log",
+		LocalTime: true,
+	})
+	
 	meta.Init()
-
 	err := rpc.Serve()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatalf("start server error: %s",err)
 	}
 }

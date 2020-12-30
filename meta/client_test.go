@@ -2,6 +2,10 @@ package meta
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"io"
+	"os"
 	"testing"
 	"time"
 
@@ -57,8 +61,20 @@ var updates = []update{
 	},
 }
 
+func initTestLog() {
+	writers := []io.Writer{
+		&lumberjack.Logger{
+			Filename:  "meta-proxy-test.log",
+			LocalTime: true,
+		},
+		os.Stdout}
+	logrus.SetOutput(io.MultiWriter(writers...))
+}
+
 // init the zk data
 func init() {
+	initTestLog()
+
 	zkAddrs = testZkAddrs
 	zkWatcherCount = 2
 	initClusterManager()
