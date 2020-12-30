@@ -56,7 +56,7 @@ func initClusterManager() {
 
 	tables := gcache.New(zkWatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
 		value.(*TableInfoWatcher).ctx.cancel()
-		logrus.Warnf("[%s] evicted from table cache (capacity: %d)", key.(string), zkWatcherCount)
+		// TODO(jiashuo1) perf-counter
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,
@@ -79,24 +79,24 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		}
 	}
 
-	logrus.Infof("[%s] can't get cluster info from local cache, try fetch from zk.", table)
+	//TODO(jiashuo) perf-counter
 	m.Mut.Lock()
 	defer m.Mut.Unlock()
 	tableInfo, err = m.Tables.Get(table)
 	if err != nil {
 		tableInfo, err = m.newTableInfo(table)
 		if err != nil {
-			logrus.Errorf("[%s] get cluster info failed: %s", table, err)
+			logrus.Errorf("[%s] failed to get cluster info: %s", table, err)
 			return nil, err
 		}
 		err = m.Tables.Set(table, tableInfo)
 		if err != nil {
-			logrus.Errorf("[%s] local cache cluster info is updated failed: %s", table, err)
+			logrus.Errorf("[%s] failed to update local cache cluster info: %s", table, err)
 			return nil, base.ERR_INVALID_DATA
 		}
 	}
-
-	metaAddrs := tableInfo.(*TableInfoWatcher).metaAddrs
+	tableInfoW := tableInfo.(*TableInfoWatcher)
+	metaAddrs := tableInfoW.metaAddrs
 	meta = m.Metas[metaAddrs]
 	if meta == nil {
 		metaList, err := parseToMetaList(metaAddrs)
@@ -108,8 +108,8 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		m.Metas[metaAddrs] = meta
 	}
 
-	logrus.Infof("[%s] cluster info[%s(%s)] fetched from zk[%s] succeed.", table,
-		tableInfo.(*TableInfoWatcher).clusterName, tableInfo.(*TableInfoWatcher).metaAddrs, zkAddrs)
+	logrus.Infof("[%s] cluster info[%s(%s)] fetched from zk[%s]", table,
+		tableInfoW.clusterName, tableInfoW.metaAddrs, zkAddrs)
 	return meta, nil
 }
 
@@ -128,7 +128,7 @@ func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 			logrus.Errorf("[%s] cluster info doesn't exist on zk[%s(%s)], err: %s", table, zkAddrs, path, err)
 			return nil, base.ERR_OBJECT_NOT_FOUND
 		} else {
-			logrus.Errorf("[%s] get cluster info from zk[%s(%s)] failed: %s", table, zkAddrs, path, err)
+			logrus.Errorf("[%s] failed to get cluster info from zk[%s(%s)]: %s", table, zkAddrs, path, err)
 			return nil, base.ERR_ZOOKEEPER_OPERATION
 		}
 	}
@@ -170,33 +170,32 @@ func (m *ClusterManager) watchTableInfoChanged(watcher *TableInfoWatcher) {
 		if event.Type == zk.EventNodeDataChanged {
 			tableInfo, err := m.newTableInfo(tableName)
 			if err != nil {
-				logrus.Panicf("[%s] get cluster info failed when trigger watcher: %s", tableName, err)
+				logrus.Panicf("[%s] failed to get cluster info when trigger watcher: %s", tableName, err)
 			}
 			m.Mut.Lock()
 			err = m.Tables.Set(tableName, tableInfo)
 			m.Mut.Unlock()
 			if err != nil {
-				logrus.Panicf("[%s] local cache cluster info is updated to %s(%s) failed: %s",
+				logrus.Panicf("[%s] failed to update local cache cluster info to %s(%s): %s",
 					tableName, tableInfo.clusterName, tableInfo.metaAddrs, err)
 			}
-			logrus.Infof("[%s] local cache cluster info is updated to %s(%s) succeed", tableName,
+			logrus.Infof("[%s] local cache cluster info is updated to %s(%s)", tableName,
 				tableInfo.clusterName, tableInfo.metaAddrs)
 		} else if event.Type == zk.EventNodeDeleted {
 			m.Mut.Lock()
 			if m.Tables.Has(tableName) {
 				success := m.Tables.Remove(tableName)
 				if !success {
-					logrus.Panicf("[%s] local cache cluster info is removed failed!", tableName)
+					logrus.Panicf("[%s] failed to remove local cache cluster info", tableName)
 				}
 			}
 			m.Mut.Unlock()
-			logrus.Infof("[%s] local cache cluster info is removed succeed", tableName)
+			logrus.Infof("[%s] local cache cluster info is removed", tableName)
 		} else {
-			logrus.Infof("[%s] cluster info is updated, type = %s.", tableName, event.Type.String())
+			logrus.Errorf("[%s] unexpected zk event, type = %s.", tableName, event.Type.String())
 		}
 
 	case <-watcher.ctx.ctx.Done():
-		logrus.Warnf("[%s] zk watcher is canceled from cache", watcher.tableName)
 		return
 	}
 }
