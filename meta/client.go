@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pegasus-kv/meta-proxy/collector"
 	"strings"
 	"sync"
 	"time"
@@ -56,7 +57,7 @@ func initClusterManager() {
 
 	tables := gcache.New(zkWatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
 		value.(*TableInfoWatcher).ctx.cancel()
-		// TODO(jiashuo1) perf-counter
+		collector.TableWatcherEvictCounter.Inc()
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,

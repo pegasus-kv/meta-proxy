@@ -10,14 +10,14 @@ import (
 func main() {
 	logrus.SetOutput(&lumberjack.Logger{
 		Filename:  "meta-proxy.log",
-		MaxSize: 500, // MB
-		MaxAge: 7, // days
+		MaxSize:   500, // MB
+		MaxAge:    7,   // days
 		LocalTime: true,
 	})
-	
+
 	meta.Init()
 	err := rpc.Serve()
 	if err != nil {
-		logrus.Fatalf("start server error: %s",err)
+		logrus.Fatalf("start server error: %s", err)
 	}
 }
