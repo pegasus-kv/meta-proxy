@@ -57,7 +57,7 @@ func initClusterManager() {
 
 	tables := gcache.New(zkWatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
 		value.(*TableInfoWatcher).ctx.cancel()
-		collector.TableWatcherEvictCounter.Inc()
+		collector.TableWatcherEvictCounter.Incr()
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,

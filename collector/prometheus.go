@@ -9,24 +9,20 @@ import (
 )
 
 var (
-	TableWatcherEvictCounter = registerCounterMetric(
+	TableWatcherEvictCounter = registerCounter(
 		"table_watcher_evict_count",
 		"help",
 		[]string{"service"},
-		[]string{"pegasus_meta_proxy"}).MetricWithLabel.(prometheus.Counter)
+		[]string{"pegasus_meta_proxy"})
 )
 
-var metrics []*PromMetric
+var metrics []*Metric
 
-type PromMetric struct {
-	LabelName  []string
-	LabelValue []string
-
-	Metric          interface{}
-	MetricWithLabel interface{}
+func (p *Metric) Incr()  {
+	p.MetricWithLabel.(prometheus.Counter).Inc()
 }
 
-func (p *PromMetric) delete() {
+func (p *Metric) delete() {
 	switch m := p.Metric.(type) {
 	case *prometheus.CounterVec:
 		m.DeleteLabelValues(p.LabelValue...)
@@ -49,25 +45,7 @@ func Start() {
 	logrus.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func registerCounterMetric(CounterName string, CounterHelp string, labelName []string, labelValue []string) *PromMetric {
-	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: CounterName,
-		Help: CounterHelp,
-	}, labelName)
-	counterWithLabel := counter.WithLabelValues(labelValue...)
-	prometheus.MustRegister(counter)
-
-	promMetric := &PromMetric{
-		LabelName:       labelName,
-		LabelValue:      labelValue,
-		Metric:          counter,
-		MetricWithLabel: counterWithLabel,
-	}
-	metrics = append(metrics, promMetric)
-	return promMetric
-}
-
-func registerHistogramMetric(CounterName string, CounterHelp string, labelName []string, labelValue []string) *PromMetric {
+func registerHistogramMetric(CounterName string, CounterHelp string, labelName []string, labelValue []string) *Metric {
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    CounterName,
 		Help:    CounterHelp,
@@ -76,7 +54,7 @@ func registerHistogramMetric(CounterName string, CounterHelp string, labelName [
 	histogramWithLabel := histogram.WithLabelValues(labelValue...)
 	prometheus.MustRegister(histogram)
 
-	promMetric := &PromMetric{
+	promMetric := &Metric{
 		LabelName:       labelName,
 		LabelValue:      labelValue,
 		Metric:          histogram,
