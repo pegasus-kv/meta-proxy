@@ -8,34 +8,61 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	TableWatcherEvictCounter = registerCounter(
-		"table_watcher_evict_count",
-		"help",
-		[]string{"service"},
-		[]string{"pegasus_meta_proxy"})
-)
-
-var metrics []*Metric
-
-func (p *Metric) Incr()  {
-	p.MetricWithLabel.(prometheus.Counter).Inc()
+type Label struct {
+	LabelName  []string
+	LabelValue []string
 }
 
-func (p *Metric) delete() {
-	switch m := p.Metric.(type) {
-	case *prometheus.CounterVec:
-		m.DeleteLabelValues(p.LabelValue...)
-	case *prometheus.HistogramVec:
-		m.DeleteLabelValues(p.LabelValue...)
-	default:
-		logrus.Panicf("not support metric type")
+type PromCounter struct {
+	Label
+	Metric *prometheus.CounterVec
+}
+
+type PromHistogram struct {
+	Label
+	Metric *prometheus.HistogramVec
+}
+
+func (p *PromCounter) Incr() {
+	p.Metric.WithLabelValues(p.LabelValue...).Inc()
+}
+
+func registerPromCounter(CounterName string, CounterHelp string,
+	labelName []string, labelValue []string) *PromCounter {
+	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: CounterName,
+		Help: CounterHelp,
+	}, labelName)
+	prometheus.MustRegister(counter)
+
+	return &PromCounter{
+		Label: Label{
+			LabelName:  labelName,
+			LabelValue: labelValue,
+		},
+		Metric: counter,
 	}
 }
 
-func Start() {
-	defer cleanMetricLabel()
+func registerProHistogram(CounterName string, CounterHelp string,
+	labelName []string, labelValue []string) *PromHistogram {
+	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    CounterName,
+		Help:    CounterHelp,
+		Buckets: prometheus.DefBuckets,
+	}, labelName)
+	prometheus.MustRegister(histogram)
 
+	return &PromHistogram{
+		Label: Label{
+			LabelName:  labelName,
+			LabelValue: labelValue,
+		},
+		Metric: histogram,
+	}
+}
+
+func start() {
 	http.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
 		promhttp.HandlerOpts{
@@ -43,29 +70,4 @@ func Start() {
 		},
 	))
 	logrus.Fatal(http.ListenAndServe(":8080", nil))
-}
-
-func registerHistogramMetric(CounterName string, CounterHelp string, labelName []string, labelValue []string) *Metric {
-	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    CounterName,
-		Help:    CounterHelp,
-		Buckets: prometheus.DefBuckets,
-	}, labelName)
-	histogramWithLabel := histogram.WithLabelValues(labelValue...)
-	prometheus.MustRegister(histogram)
-
-	promMetric := &Metric{
-		LabelName:       labelName,
-		LabelValue:      labelValue,
-		Metric:          histogram,
-		MetricWithLabel: histogramWithLabel,
-	}
-	metrics = append(metrics, promMetric)
-	return promMetric
-}
-
-func cleanMetricLabel() {
-	for _, m := range metrics {
-		m.delete()
-	}
 }

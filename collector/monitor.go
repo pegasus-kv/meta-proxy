@@ -1,42 +1,32 @@
 package collector
 
-import "github.com/prometheus/client_golang/prometheus"
-import "git.n.xiaomi.com/falcon-sdk/goperfcounter"
+import "github.com/sirupsen/logrus"
 
-type Metric struct {
-	LabelName  []string
-	LabelValue []string
+// TODO(jiashuo1) store config
+var monitorType string
+var monitorTag map[string]string
 
-	Metric          interface{}
-	MetricWithLabel interface{}
+type Counter interface {
+	Incr()
 }
 
-type Monitor interface {
-	incr()
-}
-
-func registerCounter(monitorType string, CounterName string, CounterHelp string, labelName []string, labelValue []string) *Metric {
+func init() {
 	if monitorType == "prometheus" {
-		return registerPromCounter(CounterName, CounterHelp, labelName, labelValue)
+		start()
 	} else if monitorType == "falcon" {
-
+		return
 	}
+	logrus.Panic("no support monitor type")
 }
 
-func registerPromCounter(CounterName string, CounterHelp string, labelName []string, labelValue []string) *Metric{
-	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: CounterName,
-		Help: CounterHelp,
-	}, labelName)
-	counterWithLabel := counter.WithLabelValues(labelValue...)
-	prometheus.MustRegister(counter)
-
-	promMetric := &Metric{
-		LabelName:       labelName,
-		LabelValue:      labelValue,
-		Metric:          counter,
-		MetricWithLabel: counterWithLabel,
+func registerCounter(counterName string) interface{} {
+	if monitorType == "prometheus" {
+		// TODO(jiashuo1) tag should be same with falcon and get tag from config
+		return registerPromCounter(counterName, "counterHelp",
+			[]string{"service"}, []string{"meta-proxy"})
+	} else if monitorType == "falcon" {
+		return registerFalconCounter(counterName)
 	}
-	metrics = append(metrics, promMetric)
-	return promMetric
+	logrus.Panic("no support monitor type")
+	return nil
 }
