@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pegasus-kv/meta-proxy/collector"
 	"strings"
 	"sync"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/bluele/gcache"
 	"github.com/go-zookeeper/zk"
+	"github.com/pegasus-kv/meta-proxy/collector"
 	"github.com/sirupsen/logrus"
 )
 
