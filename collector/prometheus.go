@@ -44,7 +44,7 @@ func registerPromCounter(CounterName string, CounterHelp string,
 	}
 }
 
-func registerProHistogram(CounterName string, CounterHelp string,
+func registerPromHistogram(CounterName string, CounterHelp string,
 	labelName []string, labelValue []string) *PromHistogram {
 	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    CounterName,
