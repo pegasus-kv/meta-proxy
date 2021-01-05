@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"strings"
 	"sync"
 	"time"
@@ -16,11 +17,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TODO(jiashuo) store config file
-var zkAddrs = []string{""}
-var zkTimeOut = 1000000000 // unit ns, equal 1s
-var zkRoot = "/pegasus-cluster"
-var zkWatcherCount = 1024
+var zkAddrs []string
+var zkRoot string
+var zkTimeOut int // unit ns, equal 1s
+var zkWatcherCount int
 
 var globalClusterManager *ClusterManager
 
@@ -48,8 +48,8 @@ type TableInfoWatcher struct {
 	ctx         zkContext
 }
 
-// TODO(jishuo1) change log module
 func initClusterManager() {
+	initZkConfig()
 	zkConn, _, err := zk.Connect(zkAddrs, time.Duration(zkTimeOut))
 	if err != nil {
 		logrus.Panicf("failed to connect to zookeeper \"%s\": %s", zkAddrs, err)
@@ -67,6 +67,14 @@ func initClusterManager() {
 
 	logrus.Infof("init cluster manager: zk=%s, zkTimeOut=%d(ms), zkRoot=%s, zkWatcherCount=%d",
 		zkAddrs, zkTimeOut/(1000*1000), zkRoot, zkWatcherCount)
+}
+
+// parse the zk config from the Configuration
+func initZkConfig() {
+	zkAddrs = config.Cfg.Zk.Address
+	zkRoot = config.Cfg.Zk.Root
+	zkTimeOut = config.Cfg.Zk.Timeout * 1000000 // the config value unit is ms, but zk request ns
+	zkWatcherCount = config.Cfg.Zk.WatcherCount
 }
 
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {

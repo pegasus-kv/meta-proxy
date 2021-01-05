@@ -27,11 +27,9 @@ func (p *PromCounter) Incr() {
 	p.Metric.WithLabelValues(p.LabelValue...).Inc()
 }
 
-func registerPromCounter(CounterName string, CounterHelp string,
-	labelName []string, labelValue []string) *PromCounter {
+func registerPromCounter(CounterName string, labelName []string, labelValue []string) *PromCounter {
 	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: CounterName,
-		Help: CounterHelp,
 	}, labelName)
 	prometheus.MustRegister(counter)
 

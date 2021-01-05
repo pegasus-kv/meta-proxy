@@ -1,0 +1,11 @@
+Zookeeper:
+  address: [127.0.0.1:22181,127.0.0.2:22181]
+  root: pegasus-cluster
+  timeout: 1000 # ms
+  watcher_count: 1024
+
+Perfcounter:
+  type: prometheus
+  tags: # custom config // if type=falcon, the config must set into "perfcounter.json" because of falcon sdk standards
+    regin: c3tst-staging
+    service: meta-proxy

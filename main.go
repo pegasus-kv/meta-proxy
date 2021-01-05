@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/pegasus-kv/meta-proxy/collector"
 	"github.com/pegasus-kv/meta-proxy/meta"
 	"github.com/pegasus-kv/meta-proxy/rpc"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ func main() {
 		MaxAge:    7,   // days
 		LocalTime: true,
 	})
+	collector.InitPerfCounter()
 
 	meta.Init()
 	err := rpc.Serve()
