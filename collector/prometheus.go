@@ -23,6 +23,10 @@ type PromHistogram struct {
 	Metric *prometheus.HistogramVec
 }
 
+func (p *PromCounter) Add(value int64) {
+	p.Metric.WithLabelValues(p.LabelValue...).Add(float64(value))
+}
+
 func (p *PromCounter) Incr() {
 	p.Metric.WithLabelValues(p.LabelValue...).Inc()
 }

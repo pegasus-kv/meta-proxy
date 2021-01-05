@@ -2,9 +2,9 @@ package rpc
 
 import (
 	"context"
+	"github.com/pegasus-kv/meta-proxy/collector"
 	"github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"net"
 	"sync"
 )
@@ -25,7 +25,7 @@ func Serve() error {
 			logrus.Infof("connection accept: %s", err)
 			continue
 		}
-		// TODO(wutao): add metric for connections number
+		collector.ClientConnectionCounter.Incr()
 		// TODO(wutao): add connections management
 
 		// use one goroutine per connection
@@ -51,11 +51,11 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 		req, err := dec.readRequest()
 		if err != nil {
 			if err != io.EOF {
-				log.Println(err)
+				logrus.Warn(err)
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
-			logrus.Infof("connection %s is closed", remoteAddr)
+			logrus.Warnf("connection %s is closed", remoteAddr)
 			break
 		}
 
@@ -65,7 +65,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 			result := req.handler(ctx, req.args)
 			err := enc.sendResponse(req, result)
 			if err != nil {
-				logrus.Info(err)
+				logrus.Error(err)
 			}
 
 			wg.Done()

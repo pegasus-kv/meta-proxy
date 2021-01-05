@@ -10,9 +10,11 @@ var pfcType string
 var (
 	TableWatcherEvictCounter = registerCounter(
 		"table_watcher_cache_evict_count").(Counter)
+	ClientConnectionCounter = registerCounter("client_connection_count").(Counter)
 )
 
 type Counter interface {
+	Add(value int64)
 	Incr()
 }
 

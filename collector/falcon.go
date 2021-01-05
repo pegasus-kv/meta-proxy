@@ -6,8 +6,12 @@ type FalconCounter struct {
 	name string
 }
 
+func (f *FalconCounter) Add(value int64) {
+	falcon.SetCounterCount(f.name, value)
+}
+
 func (f *FalconCounter) Incr() {
-	falcon.SetCounterCount(f.name, 1)
+	f.Add(1)
 }
 
 func registerFalconCounter(counterName string) *FalconCounter {
