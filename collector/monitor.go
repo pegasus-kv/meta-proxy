@@ -18,6 +18,7 @@ type Counter interface {
 func init() {
 	if monitorType == "prometheus" {
 		start()
+		return
 	} else if monitorType == "falcon" {
 		return
 	}
