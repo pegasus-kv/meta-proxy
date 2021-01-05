@@ -24,8 +24,8 @@ type Configuration struct {
 	Pfc PerfCounter `mapstructure:"PerfCounter"`
 }
 
-func init() {
-	viper.SetConfigFile("meta-proxy.yml")
+func InitConfig(path string) {
+	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()
 	if err = viper.ReadInConfig(); err != nil {

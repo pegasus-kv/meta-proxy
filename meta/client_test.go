@@ -2,8 +2,6 @@ package meta
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
 	"testing"
@@ -11,7 +9,9 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/go-zookeeper/zk"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var testZkAddrs = []string{"127.0.0.1:22181"}

@@ -7,5 +7,5 @@ Zookeeper:
 Perfcounter:
   type: prometheus
   tags: # custom config // if type=falcon, the config must set into "perfcounter.json" because of falcon sdk standards
-    regin: c3tst-staging
-    service: meta-proxy
+    region: c3tst_staging
+    service: meta_proxy

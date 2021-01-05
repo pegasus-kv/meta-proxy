@@ -2,10 +2,12 @@ package main
 
 import (
 	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/pegasus-kv/meta-proxy/meta"
 	"github.com/pegasus-kv/meta-proxy/rpc"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
 )
 
 func main() {
@@ -15,6 +17,7 @@ func main() {
 		MaxAge:    7,   // days
 		LocalTime: true,
 	})
+	config.InitConfig(os.Args[0])
 	collector.InitPerfCounter()
 
 	meta.Init()

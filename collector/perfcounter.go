@@ -8,9 +8,8 @@ import (
 var pfcType string
 
 var (
-	TableWatcherEvictCounter = registerCounter(
-		"table_watcher_cache_evict_count").(Counter)
-	ClientConnectionCounter = registerCounter("client_connection_count").(Counter)
+	TableWatcherEvictCounter Counter
+	ClientConnectionCounter  Counter
 )
 
 type Counter interface {
@@ -20,6 +19,9 @@ type Counter interface {
 
 func InitPerfCounter() {
 	pfcType = config.Cfg.Pfc.Type
+	TableWatcherEvictCounter = registerCounter("table_watcher_cache_evict_count").(Counter)
+	ClientConnectionCounter = registerCounter("client_connection_count").(Counter)
+
 	if pfcType == "prometheus" {
 		go start()
 		return
@@ -46,7 +48,7 @@ func parseTags() ([]string, []string) {
 	var labelsValue []string
 	for key, value := range config.Cfg.Pfc.Tags {
 		labelsName = append(labelsName, key)
-		labelsName = append(labelsValue, value)
+		labelsValue = append(labelsValue, value)
 	}
 	return labelsName, labelsValue
 }
