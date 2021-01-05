@@ -6,6 +6,11 @@ import "github.com/sirupsen/logrus"
 var monitorType string
 var monitorTag map[string]string
 
+var (
+	TableWatcherEvictCounter = registerCounter(
+		"table_watcher_evict_count").(Counter)
+)
+
 type Counter interface {
 	Incr()
 }
