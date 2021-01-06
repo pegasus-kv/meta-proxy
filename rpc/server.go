@@ -57,7 +57,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 				continue
 			}
 			collector.ClientConnectionCounter.Decrease()
-			logrus.Warnf("connection %s is closed", remoteAddr)
+			logrus.Infof("connection %s is closed", remoteAddr)
 			break
 		}
 

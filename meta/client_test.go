@@ -77,7 +77,7 @@ func init() {
 	initTestLog()
 	config.InitConfig("../meta-proxy.yml")
 	collector.InitPerfCounter()
-	config.Cfg.Zk.WatcherCount = 2
+	config.Config.ZookeeperOpt.WatcherCount = 2
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
@@ -103,12 +103,12 @@ func init() {
 
 func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
-	config.Cfg.Zk.Address = []string{"128.0.0.1:22171"}
+	config.Config.ZookeeperOpt.Address = []string{"128.0.0.1:22171"}
 	initClusterManager()
 	_, err := globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_ZOOKEEPER_OPERATION)
 
-	config.Cfg.Zk.Address = []string{"127.0.0.1:22181"}
+	config.Config.ZookeeperOpt.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 	// pass not existed table name
 	_, err = globalClusterManager.newTableInfo("notExist")
@@ -124,7 +124,7 @@ func TestGetTable(t *testing.T) {
 }
 
 func TestGetMetaConnector(t *testing.T) {
-	config.Cfg.Zk.Address = []string{"127.0.0.1:22181"}
+	config.Config.ZookeeperOpt.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher

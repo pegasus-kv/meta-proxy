@@ -13,7 +13,7 @@ import (
 
 func init() {
 	config.InitConfig("../meta-proxy.yml")
-	config.Cfg.Pfc.Type = "prometheus"
+	config.Config.PerfCounterOpt.Type = "prometheus"
 }
 
 func TestParseTags(t *testing.T) {
@@ -26,14 +26,14 @@ func TestParseTags(t *testing.T) {
 
 func TestPerfCounter(t *testing.T) {
 	InitPerfCounter()
-	// mock the PromGauge counter: TableWatcherEvictCounter = 0
-	TableWatcherEvictCounter.(*PromGauge).Add(100)
-	TableWatcherEvictCounter.(*PromGauge).Incr()
-	TableWatcherEvictCounter.(*PromGauge).Delete(100)
-	TableWatcherEvictCounter.(*PromGauge).Decrease()
+	// mock the promGauge counter: TableWatcherEvictCounter = 0
+	TableWatcherEvictCounter.(*promGauge).Add(100)
+	TableWatcherEvictCounter.(*promGauge).Incr()
+	TableWatcherEvictCounter.(*promGauge).Delete(100)
+	TableWatcherEvictCounter.(*promGauge).Decrease()
 
-	// mock the PromMeter: counter = 1
-	ClientQueryConfigQPS.(*PromMeter).Update()
+	// mock the promMeter: counter = 1
+	ClientQueryConfigQPS.(*promMeter).Update()
 	time.Sleep(1000000000)
 	resp, err := http.Get("http://localhost:1988/metrics")
 	assert.Nil(t, err)

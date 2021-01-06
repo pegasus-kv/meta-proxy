@@ -71,10 +71,10 @@ func initClusterManager() {
 
 // parse the zk config from the Configuration
 func initZkConfig() {
-	zkAddrs = config.Cfg.Zk.Address
-	zkRoot = config.Cfg.Zk.Root
-	zkTimeOut = config.Cfg.Zk.Timeout * 1000000 // the config value unit is ms, but zk request ns
-	zkWatcherCount = config.Cfg.Zk.WatcherCount
+	zkAddrs = config.Config.ZookeeperOpt.Address
+	zkRoot = config.Config.ZookeeperOpt.Root
+	zkTimeOut = config.Config.ZookeeperOpt.Timeout * 1000000 // the config value unit is ms, but zk request ns
+	zkWatcherCount = config.Config.ZookeeperOpt.WatcherCount
 }
 
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {

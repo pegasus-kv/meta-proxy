@@ -13,46 +13,46 @@ type Label struct {
 	LabelValue []string
 }
 
-/*** PromGauge metric for reporting the current total number which can be "add" or "delete" ***/
-type PromGauge struct {
+/*** promGauge metric for reporting the current total number which can be "add" or "delete" ***/
+type promGauge struct {
 	Label
 	Metric *prometheus.GaugeVec
 }
 
-func (p *PromGauge) Add(value int64) {
+func (p *promGauge) Add(value int64) {
 	p.Metric.WithLabelValues(p.LabelValue...).Add(float64(value))
 }
 
-func (p *PromGauge) Incr() {
+func (p *promGauge) Incr() {
 	p.Metric.WithLabelValues(p.LabelValue...).Inc()
 }
 
-func (p *PromGauge) Delete(value int64) {
+func (p *promGauge) Delete(value int64) {
 	p.Metric.WithLabelValues(p.LabelValue...).Add(-float64(value))
 }
 
-func (p *PromGauge) Decrease() {
+func (p *promGauge) Decrease() {
 	p.Metric.WithLabelValues(p.LabelValue...).Dec()
 }
 
-/*** PromMeter metric for reporting the rate number which only can be "add" ***/
+/*** promMeter metric for reporting the rate number which only can be "add" ***/
 /***  and the rate get by using like "rate(counter_name[5m])" in web query page ***/
-type PromMeter struct {
+type promMeter struct {
 	Label
 	Metric *prometheus.CounterVec
 }
 
-func (p *PromMeter) Update() {
+func (p *promMeter) Update() {
 	p.Metric.WithLabelValues(p.LabelValue...).Inc()
 }
 
-func registerPromGauge(counterName string, labelName []string, labelValue []string) *PromGauge {
+func registerPromGauge(counterName string, labelName []string, labelValue []string) *promGauge {
 	gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: counterName,
 	}, labelName)
 	prometheus.MustRegister(gauge)
 
-	return &PromGauge{
+	return &promGauge{
 		Label: Label{
 			LabelName:  labelName,
 			LabelValue: labelValue,
@@ -61,13 +61,13 @@ func registerPromGauge(counterName string, labelName []string, labelValue []stri
 	}
 }
 
-func registerPromMeter(counterName string, labelName []string, labelValue []string) *PromMeter {
+func registerPromMeter(counterName string, labelName []string, labelValue []string) *promMeter {
 	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: counterName,
 	}, labelName)
 	prometheus.MustRegister(counter)
 
-	return &PromMeter{
+	return &promMeter{
 		Label: Label{
 			LabelName:  labelName,
 			LabelValue: labelValue,
@@ -76,7 +76,7 @@ func registerPromMeter(counterName string, labelName []string, labelValue []stri
 	}
 }
 
-func start() {
+func startPromHTTPServer() {
 	http.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,
 		promhttp.HandlerOpts{

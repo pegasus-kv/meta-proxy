@@ -5,7 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var pfcType string
+var perfCounterType string
 
 var (
 	TableWatcherEvictCounter Gauge
@@ -26,15 +26,15 @@ type Meter interface {
 }
 
 func InitPerfCounter() {
-	pfcType = config.Cfg.Pfc.Type
+	perfCounterType = config.Config.PerfCounterOpt.Type
 	TableWatcherEvictCounter = registerCounter("table_watcher_cache_evict_count").(Gauge)
 	ClientConnectionCounter = registerCounter("client_connection_count").(Gauge)
 	ClientQueryConfigQPS = registerMeter("client_query_config_request_qps").(Meter)
 
-	if pfcType == "prometheus" {
-		go start()
+	if perfCounterType == "prometheus" {
+		go startPromHTTPServer()
 		return
-	} else if pfcType == "falcon" {
+	} else if perfCounterType == "falcon" {
 		return
 	}
 	logrus.Panic("no support monitor type")
@@ -42,10 +42,10 @@ func InitPerfCounter() {
 
 // report the current total count
 func registerCounter(counterName string) interface{} {
-	if pfcType == "prometheus" {
+	if perfCounterType == "prometheus" {
 		labelsName, labelsValue := parseTags()
 		return registerPromGauge(counterName, labelsName, labelsValue)
-	} else if pfcType == "falcon" {
+	} else if perfCounterType == "falcon" {
 		return registerFalconMetric(counterName)
 	}
 	logrus.Panic("no support monitor type")
@@ -54,10 +54,10 @@ func registerCounter(counterName string) interface{} {
 
 // report the current request rate
 func registerMeter(counterName string) interface{} {
-	if pfcType == "prometheus" {
+	if perfCounterType == "prometheus" {
 		labelsName, labelsValue := parseTags()
 		return registerPromMeter(counterName, labelsName, labelsValue)
-	} else if pfcType == "falcon" {
+	} else if perfCounterType == "falcon" {
 		return registerFalconMetric(counterName)
 	}
 	logrus.Panic("no support monitor type")
@@ -68,7 +68,7 @@ func registerMeter(counterName string) interface{} {
 func parseTags() ([]string, []string) {
 	var labelsName []string
 	var labelsValue []string
-	for key, value := range config.Cfg.Pfc.Tags {
+	for key, value := range config.Config.PerfCounterOpt.Tags {
 		labelsName = append(labelsName, key)
 		labelsValue = append(labelsValue, value)
 	}

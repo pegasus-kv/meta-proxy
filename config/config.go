@@ -5,23 +5,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Zookeeper struct {
+type ZookeeperOption struct {
 	Address      []string `mapstructure:"address"`
 	Root         string   `mapstructure:"root"`
 	Timeout      int      `mapstructure:"timeout"`
-	WatcherCount int      `mapstructure:"watcher_count"`
+	WatcherCount int      `mapstructure:"table_watcher_cache_capacity"`
 }
 
-type PerfCounter struct {
+type PerfCounterOption struct {
 	Type string            `mapstructure:"type"`
 	Tags map[string]string `mapstructure:"tags"`
 }
 
-var Cfg Configuration
+var Config Configuration
 
 type Configuration struct {
-	Zk  Zookeeper   `mapstructure:"Zookeeper"`
-	Pfc PerfCounter `mapstructure:"PerfCounter"`
+	ZookeeperOpt   ZookeeperOption   `mapstructure:"zookeeper"`
+	PerfCounterOpt PerfCounterOption `mapstructure:"perfCounter"`
 }
 
 func InitConfig(path string) {
@@ -35,7 +35,7 @@ func InitConfig(path string) {
 		}
 	}
 
-	err := viper.Unmarshal(&Cfg)
+	err := viper.Unmarshal(&Config)
 	if err != nil {
 		logrus.Panicf("unable to decode into struct, %s", err)
 	}
