@@ -13,6 +13,7 @@ import (
 
 func init() {
 	config.InitConfig("../meta-proxy.yml")
+	config.Cfg.Pfc.Type = "prometheus"
 }
 
 func TestParseTags(t *testing.T) {
@@ -25,13 +26,20 @@ func TestParseTags(t *testing.T) {
 
 func TestPerfCounter(t *testing.T) {
 	InitPerfCounter()
-	TableWatcherEvictCounter.(*PromCounter).Incr()
+	// mock the PromGauge counter: TableWatcherEvictCounter = 0
+	TableWatcherEvictCounter.(*PromGauge).Add(100)
+	TableWatcherEvictCounter.(*PromGauge).Incr()
+	TableWatcherEvictCounter.(*PromGauge).Delete(100)
+	TableWatcherEvictCounter.(*PromGauge).Decrease()
+
+	// mock the PromMeter: counter = 1
+	ClientQueryConfigQPS.(*PromMeter).Update()
 	time.Sleep(1000000000)
-	resp, err := http.Get("http://localhost:8080/metrics")
+	resp, err := http.Get("http://localhost:1988/metrics")
 	assert.Nil(t, err)
 	// the resp page content like: "counter value \n counter value \n"
 	body, _ := ioutil.ReadAll(resp.Body)
-	assert.Contains(t,
-		strings.Split(string(body), "\n"),
-		"table_watcher_cache_evict_count{region=\"c3tst_staging\",service=\"meta_proxy\"} 1")
+	result := strings.Split(string(body), "\n")
+	assert.Contains(t, result, "table_watcher_cache_evict_count{region=\"c3tst_staging\",service=\"meta_proxy\"} 0")
+	assert.Contains(t, result, "client_query_config_request_qps{region=\"c3tst_staging\",service=\"meta_proxy\"} 1")
 }

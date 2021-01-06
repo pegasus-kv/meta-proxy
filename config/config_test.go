@@ -16,7 +16,7 @@ func TestConfig(t *testing.T) {
 			WatcherCount: 1024,
 		},
 		Pfc: PerfCounter{
-			Type: "prometheus",
+			Type: "falcon",
 			Tags: map[string]string{
 				"region":  "c3tst_staging",
 				"service": "meta_proxy",

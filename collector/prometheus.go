@@ -13,31 +13,61 @@ type Label struct {
 	LabelValue []string
 }
 
-type PromCounter struct {
+/*** PromGauge metric for reporting the current total number which can be "add" or "delete" ***/
+type PromGauge struct {
+	Label
+	Metric *prometheus.GaugeVec
+}
+
+func (p *PromGauge) Add(value int64) {
+	p.Metric.WithLabelValues(p.LabelValue...).Add(float64(value))
+}
+
+func (p *PromGauge) Incr() {
+	p.Metric.WithLabelValues(p.LabelValue...).Inc()
+}
+
+func (p *PromGauge) Delete(value int64) {
+	p.Metric.WithLabelValues(p.LabelValue...).Add(-float64(value))
+}
+
+func (p *PromGauge) Decrease() {
+	p.Metric.WithLabelValues(p.LabelValue...).Dec()
+}
+
+/*** PromMeter metric for reporting the rate number which only can be "add" ***/
+/***  and the rate get by using like "rate(counter_name[5m])" in web query page ***/
+type PromMeter struct {
 	Label
 	Metric *prometheus.CounterVec
 }
 
-type PromHistogram struct {
-	Label
-	Metric *prometheus.HistogramVec
-}
-
-func (p *PromCounter) Add(value int64) {
-	p.Metric.WithLabelValues(p.LabelValue...).Add(float64(value))
-}
-
-func (p *PromCounter) Incr() {
+func (p *PromMeter) Update() {
 	p.Metric.WithLabelValues(p.LabelValue...).Inc()
 }
 
-func registerPromCounter(CounterName string, labelName []string, labelValue []string) *PromCounter {
+func registerPromGauge(counterName string, labelName []string, labelValue []string) *PromGauge {
+	gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: counterName,
+	}, labelName)
+	prometheus.MustRegister(gauge)
+
+	return &PromGauge{
+		Label: Label{
+			LabelName:  labelName,
+			LabelValue: labelValue,
+		},
+		Metric: gauge,
+	}
+}
+
+func registerPromMeter(counterName string, labelName []string, labelValue []string) *PromMeter {
 	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: CounterName,
+		Name: counterName,
 	}, labelName)
 	prometheus.MustRegister(counter)
 
-	return &PromCounter{
+	return &PromMeter{
 		Label: Label{
 			LabelName:  labelName,
 			LabelValue: labelValue,
@@ -53,5 +83,5 @@ func start() {
 			EnableOpenMetrics: true,
 		},
 	))
-	logrus.Fatal(http.ListenAndServe(":8080", nil))
+	logrus.Fatal(http.ListenAndServe(":1988", nil))
 }

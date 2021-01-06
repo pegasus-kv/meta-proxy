@@ -56,6 +56,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
+			collector.ClientConnectionCounter.Decrease()
 			logrus.Warnf("connection %s is closed", remoteAddr)
 			break
 		}

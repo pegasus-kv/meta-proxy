@@ -129,7 +129,6 @@ func TestGetMetaConnector(t *testing.T) {
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher
 	for _, test := range tests {
-		logrus.Errorf("aaaaaaaaaaaaaaa%s", test.table)
 		_, _ = globalClusterManager.getMeta(test.table)
 		cacheWatcher, _ := globalClusterManager.Tables.Get(test.table)
 		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)

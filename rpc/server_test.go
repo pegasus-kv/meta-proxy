@@ -1,6 +1,8 @@
 package rpc
 
 import (
+	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"sync"
 	"testing"
 
@@ -11,6 +13,11 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	config.InitConfig("../meta-proxy.yml")
+	collector.InitPerfCounter()
+}
 
 func TestServeConn(t *testing.T) {
 	// mock connection and request

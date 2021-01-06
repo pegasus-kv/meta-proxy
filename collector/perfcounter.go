@@ -8,19 +8,28 @@ import (
 var pfcType string
 
 var (
-	TableWatcherEvictCounter Counter
-	ClientConnectionCounter  Counter
+	TableWatcherEvictCounter Gauge
+	ClientConnectionCounter  Gauge
+	ClientQueryConfigQPS     Meter
 )
 
-type Counter interface {
+type Gauge interface {
 	Add(value int64)
 	Incr()
+
+	Delete(value int64)
+	Decrease()
+}
+
+type Meter interface {
+	Update()
 }
 
 func InitPerfCounter() {
 	pfcType = config.Cfg.Pfc.Type
-	TableWatcherEvictCounter = registerCounter("table_watcher_cache_evict_count").(Counter)
-	ClientConnectionCounter = registerCounter("client_connection_count").(Counter)
+	TableWatcherEvictCounter = registerCounter("table_watcher_cache_evict_count").(Gauge)
+	ClientConnectionCounter = registerCounter("client_connection_count").(Gauge)
+	ClientQueryConfigQPS = registerMeter("client_query_config_request_qps").(Meter)
 
 	if pfcType == "prometheus" {
 		go start()
@@ -31,12 +40,25 @@ func InitPerfCounter() {
 	logrus.Panic("no support monitor type")
 }
 
+// report the current total count
 func registerCounter(counterName string) interface{} {
 	if pfcType == "prometheus" {
 		labelsName, labelsValue := parseTags()
-		return registerPromCounter(counterName, labelsName, labelsValue)
+		return registerPromGauge(counterName, labelsName, labelsValue)
 	} else if pfcType == "falcon" {
-		return registerFalconCounter(counterName)
+		return registerFalconMetric(counterName)
+	}
+	logrus.Panic("no support monitor type")
+	return nil
+}
+
+// report the current request rate
+func registerMeter(counterName string) interface{} {
+	if pfcType == "prometheus" {
+		labelsName, labelsValue := parseTags()
+		return registerPromMeter(counterName, labelsName, labelsValue)
+	} else if pfcType == "falcon" {
+		return registerFalconMetric(counterName)
 	}
 	logrus.Panic("no support monitor type")
 	return nil

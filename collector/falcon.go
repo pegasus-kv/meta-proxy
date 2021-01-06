@@ -2,20 +2,34 @@ package collector
 
 import falcon "github.com/niean/goperfcounter"
 
-type FalconCounter struct {
+type FalconMetric struct {
 	name string
 }
 
-func (f *FalconCounter) Add(value int64) {
+/*** Falcon Gauge metric API for reporting the current total number which can be "add" or "delete" ***/
+func (f *FalconMetric) Add(value int64) {
 	falcon.SetCounterCount(f.name, value)
 }
 
-func (f *FalconCounter) Incr() {
+func (f *FalconMetric) Incr() {
 	f.Add(1)
 }
 
-func registerFalconCounter(counterName string) *FalconCounter {
-	return &FalconCounter{
+func (f *FalconMetric) Delete(value int64) {
+	falcon.SetCounterCount(f.name, -value)
+}
+
+func (f *FalconMetric) Decrease() {
+	f.Delete(1)
+}
+
+/*** Falcon Meter metric API for reporting the rate number which only can be "add" ***/
+func (f *FalconMetric) Update() {
+	falcon.SetMeterCount(f.name, 1)
+}
+
+func registerFalconMetric(counterName string) *FalconMetric {
+	return &FalconMetric{
 		name: counterName,
 	}
 }
