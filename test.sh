@@ -16,7 +16,6 @@ if [ ! -f $PEGASUS_PKG.tar.gz ]; then
 fi
 cd $PEGASUS_PKG
 
-./run.sh stop_onebox
 ./run.sh start_onebox -w
 cd ../
 
