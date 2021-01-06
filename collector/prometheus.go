@@ -35,8 +35,8 @@ func (p *promGauge) Decrease() {
 	p.Metric.WithLabelValues(p.LabelValue...).Dec()
 }
 
-/*** promMeter metric for reporting the rate number which only can be "add" ***/
-/***  and the rate get by using like "rate(counter_name[5m])" in web query page ***/
+/*** promMeter metric for reporting the rate number which only can be "add"
+  and the rate get by using like "rate(counter_name[5m])" in web query page ***/
 type promMeter struct {
 	Label
 	Metric *prometheus.CounterVec
