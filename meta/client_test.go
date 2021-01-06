@@ -2,6 +2,8 @@ package meta
 
 import (
 	"fmt"
+	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"io"
 	"os"
 	"testing"
@@ -14,8 +16,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var testZkAddrs = []string{"127.0.0.1:22181"}
-
 type testCase struct {
 	table string
 	addr  string
@@ -23,21 +23,22 @@ type testCase struct {
 	data  string
 }
 
+var zkRootTest = "/pegasus-cluster"
 var tests = []testCase{
 	{
 		table: "temp",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/temp",
+		path:  zkRootTest + "/temp",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 	{
 		table: "stat",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/stat",
+		path:  zkRootTest + "/stat",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 	{
 		table: "test",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/test",
+		path:  zkRootTest + "/test",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 }
 
@@ -74,9 +75,9 @@ func initTestLog() {
 // init the zk data
 func init() {
 	initTestLog()
-
-	zkAddrs = testZkAddrs
-	zkWatcherCount = 2
+	config.InitConfig("../meta-proxy.yml")
+	collector.InitPerfCounter()
+	config.Cfg.Zk.WatcherCount = 2
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
@@ -102,28 +103,33 @@ func init() {
 
 func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
-	zkAddrs = []string{"128.0.0.1:22171"}
+	config.Cfg.Zk.Address = []string{"128.0.0.1:22171"}
 	initClusterManager()
 	_, err := globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_ZOOKEEPER_OPERATION)
 
-	zkAddrs = testZkAddrs
+	config.Cfg.Zk.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 	// pass not existed table name
 	_, err = globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_OBJECT_NOT_FOUND)
 	// pass exist table
 	for _, test := range tests {
-		addrs, _ := globalClusterManager.newTableInfo(test.table)
+		addrs, err := globalClusterManager.newTableInfo(test.table)
+		if err != nil {
+			logrus.Panic(err)
+		}
 		assert.Equal(t, test.addr, addrs.metaAddrs)
 	}
 }
 
 func TestGetMetaConnector(t *testing.T) {
-	zkAddrs = testZkAddrs
+	config.Cfg.Zk.Address = []string{"127.0.0.1:22181"}
+	initClusterManager()
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher
 	for _, test := range tests {
+		logrus.Errorf("aaaaaaaaaaaaaaa%s", test.table)
 		_, _ = globalClusterManager.getMeta(test.table)
 		cacheWatcher, _ := globalClusterManager.Tables.Get(test.table)
 		assert.Equal(t, test.addr, cacheWatcher.(*TableInfoWatcher).metaAddrs)

@@ -19,7 +19,7 @@ func TestParseTags(t *testing.T) {
 	names, values := parseTags()
 	assert.Contains(t, names, "region")
 	assert.Contains(t, names, "service")
-	assert.Contains(t, values, "c3tst-staging")
+	assert.Contains(t, values, "c3tst_staging")
 	assert.Contains(t, values, "meta_proxy")
 }
 

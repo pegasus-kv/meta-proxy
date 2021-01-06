@@ -1,6 +1,6 @@
 Zookeeper:
   address: [127.0.0.1:22181,127.0.0.2:22181]
-  root: pegasus-cluster
+  root: /pegasus-cluster
   timeout: 1000 # ms
   watcher_count: 1024
 

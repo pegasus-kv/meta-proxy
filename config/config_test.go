@@ -11,7 +11,7 @@ func TestConfig(t *testing.T) {
 	config := Configuration{
 		Zk: Zookeeper{
 			Address:      []string{"127.0.0.1:22181", "127.0.0.2:22181"},
-			Root:         "pegasus-cluster",
+			Root:         "/pegasus-cluster",
 			Timeout:      1000,
 			WatcherCount: 1024,
 		},
