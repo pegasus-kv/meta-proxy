@@ -35,7 +35,7 @@ func TestPrometheus(t *testing.T) {
 	// mock the promMeter: counter = 1
 	ClientQueryConfigQPS.(*promMeter).Update()
 	time.Sleep(1000000000)
-	resp, err := http.Get("http://localhost:1988/metrics")
+	resp, err := http.Get("http://localhost:9091/metrics")
 	assert.Nil(t, err)
 	// the resp page content like: "counter value \n counter value \n"
 	body, _ := ioutil.ReadAll(resp.Body)
