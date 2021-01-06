@@ -2,8 +2,6 @@ package meta
 
 import (
 	"fmt"
-	"github.com/pegasus-kv/meta-proxy/collector"
-	"github.com/pegasus-kv/meta-proxy/config"
 	"io"
 	"os"
 	"testing"
@@ -11,6 +9,8 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/go-zookeeper/zk"
+	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/natefinch/lumberjack.v2"

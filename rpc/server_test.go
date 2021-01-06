@@ -1,8 +1,6 @@
 package rpc
 
 import (
-	"github.com/pegasus-kv/meta-proxy/collector"
-	"github.com/pegasus-kv/meta-proxy/config"
 	"sync"
 	"testing"
 
@@ -11,6 +9,8 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
 	"github.com/XiaoMi/pegasus-go-client/rpc"
 	"github.com/XiaoMi/pegasus-go-client/session"
+	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/stretchr/testify/assert"
 )
 
