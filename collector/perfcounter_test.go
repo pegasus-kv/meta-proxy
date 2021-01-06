@@ -1,13 +1,14 @@
 package collector
 
 import (
-	"github.com/pegasus-kv/meta-proxy/config"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pegasus-kv/meta-proxy/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -29,7 +30,7 @@ func TestPerfCounter(t *testing.T) {
 	resp, err := http.Get("http://localhost:8080/metrics")
 	assert.Nil(t, err)
 	// the resp page content like: "counter value \n counter value \n"
-	body, err := ioutil.ReadAll(resp.Body)
+	body, _ := ioutil.ReadAll(resp.Body)
 	assert.Contains(t,
 		strings.Split(string(body), "\n"),
 		"table_watcher_cache_evict_count{region=\"c3tst_staging\",service=\"meta_proxy\"} 1")

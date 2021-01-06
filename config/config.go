@@ -27,8 +27,7 @@ type Configuration struct {
 func InitConfig(path string) {
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
-	if err = viper.ReadInConfig(); err != nil {
+	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			logrus.Panicf("unable find config file(meta-proxy.yml)")
 		} else {
@@ -36,7 +35,7 @@ func InitConfig(path string) {
 		}
 	}
 
-	err = viper.Unmarshal(&Cfg)
+	err := viper.Unmarshal(&Cfg)
 	if err != nil {
 		logrus.Panicf("unable to decode into struct, %s", err)
 	}

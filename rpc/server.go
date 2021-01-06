@@ -2,11 +2,12 @@ package rpc
 
 import (
 	"context"
-	"github.com/pegasus-kv/meta-proxy/collector"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"sync"
+
+	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/sirupsen/logrus"
 )
 
 // Serve blocks until the connection shutdown.

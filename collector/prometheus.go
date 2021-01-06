@@ -46,24 +46,6 @@ func registerPromCounter(CounterName string, labelName []string, labelValue []st
 	}
 }
 
-func registerPromHistogram(CounterName string, CounterHelp string,
-	labelName []string, labelValue []string) *PromHistogram {
-	histogram := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name:    CounterName,
-		Help:    CounterHelp,
-		Buckets: prometheus.DefBuckets,
-	}, labelName)
-	prometheus.MustRegister(histogram)
-
-	return &PromHistogram{
-		Label: Label{
-			LabelName:  labelName,
-			LabelValue: labelValue,
-		},
-		Metric: histogram,
-	}
-}
-
 func start() {
 	http.Handle("/metrics", promhttp.HandlerFor(
 		prometheus.DefaultGatherer,

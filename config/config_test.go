@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/magiconair/properties/assert"
 	"testing"
+
+	"github.com/magiconair/properties/assert"
 )
 
 func TestConfig(t *testing.T) {
