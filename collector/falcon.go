@@ -1,6 +1,6 @@
 package collector
 
-import falcon "git.n.xiaomi.com/falcon-sdk/goperfcounter"
+import falcon "github.com/niean/goperfcounter"
 
 type FalconCounter struct {
 	name string
