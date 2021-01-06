@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ZookeeperOption used for init zookeeper connect config and the max watcher count
 type ZookeeperOption struct {
 	Address      []string `mapstructure:"address"`
 	Root         string   `mapstructure:"root"`
@@ -12,6 +13,7 @@ type ZookeeperOption struct {
 	WatcherCount int      `mapstructure:"table_watcher_cache_capacity"`
 }
 
+// PerfCounterOption used for init the perfCounter type(now support the Falcon and Prometheus) and
 type PerfCounterOption struct {
 	Type string            `mapstructure:"type"`
 	Tags map[string]string `mapstructure:"tags"`
@@ -19,11 +21,13 @@ type PerfCounterOption struct {
 
 var Config Configuration
 
+// Configuration is the wrapper of ZookeeperOption and PerfCounterOption
 type Configuration struct {
 	ZookeeperOpt   ZookeeperOption   `mapstructure:"zookeeper"`
 	PerfCounterOpt PerfCounterOption `mapstructure:"perfCounter"`
 }
 
+// init meta-proxy config using the config file
 func InitConfig(path string) {
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")

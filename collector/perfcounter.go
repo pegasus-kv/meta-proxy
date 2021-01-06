@@ -28,6 +28,7 @@ type Meter interface {
 	Update()
 }
 
+// init perfcounter base config
 func InitPerfCounter() {
 	perfCounterType = config.Config.PerfCounterOpt.Type
 	TableWatcherEvictCounter = registerGauge("table_watcher_cache_evict_count").(Gauge)
