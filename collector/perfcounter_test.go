@@ -13,7 +13,6 @@ import (
 
 func init() {
 	config.InitConfig("../meta-proxy.yml")
-	config.Config.PerfCounterOpt.Type = "prometheus"
 }
 
 func TestParseTags(t *testing.T) {
@@ -24,13 +23,14 @@ func TestParseTags(t *testing.T) {
 	assert.Contains(t, values, "meta_proxy")
 }
 
-func TestPerfCounter(t *testing.T) {
+func TestPrometheus(t *testing.T) {
+	config.Config.PerfCounterOpt.Type = "prometheus"
 	InitPerfCounter()
 	// mock the promGauge counter: TableWatcherEvictCounter = 0
-	TableWatcherEvictCounter.(*promGauge).Add(100)
-	TableWatcherEvictCounter.(*promGauge).Incr()
-	TableWatcherEvictCounter.(*promGauge).Delete(100)
-	TableWatcherEvictCounter.(*promGauge).Decrease()
+	TableWatcherEvictCounter.Add(100)
+	TableWatcherEvictCounter.Incr()
+	TableWatcherEvictCounter.Delete(100)
+	TableWatcherEvictCounter.Decrease()
 
 	// mock the promMeter: counter = 1
 	ClientQueryConfigQPS.(*promMeter).Update()
@@ -42,4 +42,17 @@ func TestPerfCounter(t *testing.T) {
 	result := strings.Split(string(body), "\n")
 	assert.Contains(t, result, "table_watcher_cache_evict_count{region=\"c3tst_staging\",service=\"meta_proxy\"} 0")
 	assert.Contains(t, result, "client_query_config_request_qps{region=\"c3tst_staging\",service=\"meta_proxy\"} 1")
+}
+
+func TestFalcon(t *testing.T) {
+	config.Config.PerfCounterOpt.Type = "falcon"
+	InitPerfCounter()
+	// mock the falconGauge counter: TableWatcherEvictCounter = 0
+	TableWatcherEvictCounter.(*FalconMetric).Add(100)
+	TableWatcherEvictCounter.(*FalconMetric).Incr()
+	TableWatcherEvictCounter.(*FalconMetric).Delete(100)
+	TableWatcherEvictCounter.(*FalconMetric).Decrease()
+
+	// mock the falconMeter: counter = 1
+	ClientQueryConfigQPS.(*FalconMetric).Update()
 }
