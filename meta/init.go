@@ -24,7 +24,6 @@ func Init() {
 
 func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 	collector.ClientQueryConfigQPS.Update()
-
 	var errorCode *base.ErrorCode
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName

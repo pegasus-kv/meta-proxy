@@ -18,7 +18,7 @@ func main() {
 		MaxAge:    7,   // days
 		LocalTime: true,
 	})
-	config.InitConfig(os.Args[0])
+	config.InitConfig(os.Args[1])
 	collector.InitPerfCounter()
 
 	meta.Init()

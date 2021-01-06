@@ -83,5 +83,5 @@ func startPromHTTPServer() {
 			EnableOpenMetrics: true,
 		},
 	))
-	logrus.Fatal(http.ListenAndServe(":1988", nil))
+	logrus.Fatal(http.ListenAndServe(":9091", nil))
 }

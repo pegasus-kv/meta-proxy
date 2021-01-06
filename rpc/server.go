@@ -12,7 +12,7 @@ import (
 
 // Serve blocks until the connection shutdown.
 func Serve() error {
-	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:34601")
+	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:8888")
 	if err != nil {
 		return err
 	}
@@ -20,10 +20,11 @@ func Serve() error {
 	if err != nil {
 		return err
 	}
+	logrus.Infof("start server listen: %s", listener.Addr())
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logrus.Infof("connection accept: %s", err)
+			logrus.Errorf("connection accept: %s", err)
 			continue
 		}
 		collector.ClientConnectionCounter.Incr()

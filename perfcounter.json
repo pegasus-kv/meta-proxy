@@ -1,3 +1,15 @@
 {
-  "tags": "service=meta-proxy,region=c3tst-staging"
+  "debug": false,
+  "hostname": "",
+  "tags": "service=meta-proxy,region=c3tst-staging",
+  "step": 60,
+  "bases":[],
+  "push": {
+    "enabled":true,
+    "api": ""
+  },
+  "http": {
+    "enabled": false,
+    "listen": ""
+  }
 }
