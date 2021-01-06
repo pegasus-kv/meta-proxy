@@ -13,6 +13,8 @@ var (
 	ClientQueryConfigQPS     Meter
 )
 
+// Gauge is the generic type for performance counters which can be `add` or `delete`, for example, used for current
+// connection number
 type Gauge interface {
 	Add(value int64)
 	Incr()
@@ -21,14 +23,15 @@ type Gauge interface {
 	Decrease()
 }
 
+// Meter is the generic type for performance counters which only can be `add`, for example, used for request-rate(qps)
 type Meter interface {
 	Update()
 }
 
 func InitPerfCounter() {
 	perfCounterType = config.Config.PerfCounterOpt.Type
-	TableWatcherEvictCounter = registerCounter("table_watcher_cache_evict_count").(Gauge)
-	ClientConnectionCounter = registerCounter("client_connection_count").(Gauge)
+	TableWatcherEvictCounter = registerGauge("table_watcher_cache_evict_count").(Gauge)
+	ClientConnectionCounter = registerGauge("client_connection_count").(Gauge)
 	ClientQueryConfigQPS = registerMeter("client_query_config_request_qps").(Meter)
 
 	if perfCounterType == "prometheus" {
@@ -40,8 +43,7 @@ func InitPerfCounter() {
 	logrus.Panic("no support monitor type")
 }
 
-// report the current total count
-func registerCounter(counterName string) interface{} {
+func registerGauge(counterName string) interface{} {
 	if perfCounterType == "prometheus" {
 		labelsName, labelsValue := parseTags()
 		return registerPromGauge(counterName, labelsName, labelsValue)
@@ -52,7 +54,6 @@ func registerCounter(counterName string) interface{} {
 	return nil
 }
 
-// report the current request rate
 func registerMeter(counterName string) interface{} {
 	if perfCounterType == "prometheus" {
 		labelsName, labelsValue := parseTags()
