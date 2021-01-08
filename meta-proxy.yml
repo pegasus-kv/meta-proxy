@@ -4,7 +4,7 @@ zookeeper:
   timeout: 1000 # ms
   table_watcher_cache_capacity: 1024
 
-perfcounter:
+metric:
   type: falcon
   tags: # custom config // if type=falcon, the config must set into "perfcounter.json" because of falcon sdk standards
     region: c3tst_staging

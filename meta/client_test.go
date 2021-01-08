@@ -9,7 +9,6 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/go-zookeeper/zk"
-	"github.com/pegasus-kv/meta-proxy/collector"
 	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -75,9 +74,8 @@ func initTestLog() {
 // init the zk data
 func init() {
 	initTestLog()
-	config.InitConfig("../meta-proxy.yml")
-	collector.InitPerfCounter()
-	config.Config.ZookeeperOpt.WatcherCount = 2
+	config.Init("../meta-proxy.yml")
+	config.GlobalConfig.ZookeeperOpts.WatcherCount = 2
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
@@ -103,12 +101,12 @@ func init() {
 
 func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
-	config.Config.ZookeeperOpt.Address = []string{"128.0.0.1:22171"}
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"128.0.0.1:22171"}
 	initClusterManager()
 	_, err := globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_ZOOKEEPER_OPERATION)
 
-	config.Config.ZookeeperOpt.Address = []string{"127.0.0.1:22181"}
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 	// pass not existed table name
 	_, err = globalClusterManager.newTableInfo("notExist")
@@ -124,7 +122,7 @@ func TestGetTable(t *testing.T) {
 }
 
 func TestGetMetaConnector(t *testing.T) {
-	config.Config.ZookeeperOpt.Address = []string{"127.0.0.1:22181"}
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher

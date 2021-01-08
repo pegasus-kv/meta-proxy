@@ -6,13 +6,18 @@ import (
 	"net"
 	"sync"
 
-	"github.com/pegasus-kv/meta-proxy/collector"
+	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/sirupsen/logrus"
 )
 
+// declare perfcounters
+var clientConnectionCounter metrics.Gauge
+
 // Serve blocks until the connection shutdown.
 func Serve() error {
-	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:8888")
+	clientConnectionCounter = metrics.RegisterGauge("client_connection_count")
+
+	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:34601")
 	if err != nil {
 		return err
 	}
@@ -27,7 +32,7 @@ func Serve() error {
 			logrus.Errorf("connection accept: %s", err)
 			continue
 		}
-		collector.ClientConnectionCounter.Incr()
+		clientConnectionCounter.Inc()
 		// TODO(wutao): add connections management
 
 		// use one goroutine per connection
@@ -57,7 +62,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
-			collector.ClientConnectionCounter.Decrease()
+			clientConnectionCounter.Dec()
 			logrus.Infof("connection %s is closed", remoteAddr)
 			break
 		}

@@ -12,10 +12,13 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/bluele/gcache"
 	"github.com/go-zookeeper/zk"
-	"github.com/pegasus-kv/meta-proxy/collector"
 	"github.com/pegasus-kv/meta-proxy/config"
+	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/sirupsen/logrus"
 )
+
+// declare perfcounters
+var tableWatcherEvictCounter metrics.Gauge
 
 var zkAddrs []string
 var zkRoot string
@@ -49,6 +52,8 @@ type TableInfoWatcher struct {
 }
 
 func initClusterManager() {
+	tableWatcherEvictCounter = metrics.RegisterGauge("table_watcher_cache_evict_count")
+
 	initZkConfig()
 	zkConn, _, err := zk.Connect(zkAddrs, time.Duration(zkTimeOut))
 	if err != nil {
@@ -57,7 +62,7 @@ func initClusterManager() {
 
 	tables := gcache.New(zkWatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
 		value.(*TableInfoWatcher).ctx.cancel()
-		collector.TableWatcherEvictCounter.Incr()
+		tableWatcherEvictCounter.Inc()
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,
@@ -71,10 +76,10 @@ func initClusterManager() {
 
 // parse the zk config from the Configuration
 func initZkConfig() {
-	zkAddrs = config.Config.ZookeeperOpt.Address
-	zkRoot = config.Config.ZookeeperOpt.Root
-	zkTimeOut = config.Config.ZookeeperOpt.Timeout * 1000000 // the config value unit is ms, but zk request ns
-	zkWatcherCount = config.Config.ZookeeperOpt.WatcherCount
+	zkAddrs = config.GlobalConfig.ZookeeperOpts.Address
+	zkRoot = config.GlobalConfig.ZookeeperOpts.Root
+	zkTimeOut = config.GlobalConfig.ZookeeperOpts.Timeout * 1000000 // the config value unit is ms, but zk request ns
+	zkWatcherCount = config.GlobalConfig.ZookeeperOpts.WatcherCount
 }
 
 func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
