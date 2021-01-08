@@ -1,13 +1,14 @@
 package main
 
 import (
+	"os"
+
 	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/pegasus-kv/meta-proxy/meta"
 	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/pegasus-kv/meta-proxy/rpc"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
 )
 
 func main() {
