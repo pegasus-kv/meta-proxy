@@ -43,4 +43,5 @@ func Init(path string) {
 	if err != nil {
 		logrus.Panicf("unable to decode into struct, %s", err)
 	}
+	logrus.Infof("init config: %v", GlobalConfig)
 }

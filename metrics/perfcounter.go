@@ -29,7 +29,7 @@ func Init() {
 	} else if mtype == "falcon" {
 		return
 	}
-	logrus.Panic("no support metric type")
+	logrus.Panicf("no support metric type: %s", mtype)
 }
 
 func RegisterGauge(name string) Gauge {
