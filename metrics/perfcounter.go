@@ -52,7 +52,7 @@ func RegisterMeter(name string) Meter {
 	} else if mtype == "falcon" {
 		return registerFalconMeter(name)
 	}
-	logrus.Panic("no support metric type")
+	logrus.Panicf("no support metric type: %s", mtype)
 	return nil
 }
 
