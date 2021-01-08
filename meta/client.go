@@ -22,7 +22,7 @@ var tableWatcherEvictCounter metrics.Gauge
 
 var zkAddrs []string
 var zkRoot string
-var zkTimeOut int // unit ns, equal 1s
+var zkTimeOut int // unit ns
 var zkWatcherCount int
 
 var globalClusterManager *ClusterManager
