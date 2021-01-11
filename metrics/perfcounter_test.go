@@ -31,7 +31,7 @@ func TestPrometheus(t *testing.T) {
 	// mock the promGauge counter: gaugeCounter = 0
 	gaugeCounter.Add(100)
 	gaugeCounter.Inc()
-	gaugeCounter.Decrease(100)
+	gaugeCounter.Sub(100)
 	gaugeCounter.Dec()
 
 	// mock the promMeter: meterCounter = 1
@@ -54,7 +54,7 @@ func TestFalcon(t *testing.T) {
 	// mock the falconGauge counter
 	gaugeCounter.Add(100)
 	gaugeCounter.Inc()
-	gaugeCounter.Decrease(100)
+	gaugeCounter.Sub(100)
 	gaugeCounter.Dec()
 
 	// mock the falconMeter

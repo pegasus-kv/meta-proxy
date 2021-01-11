@@ -17,13 +17,13 @@ func (f *falconGauge) Inc() {
 }
 
 // Decrease decrease value of counter
-func (f *falconGauge) Decrease(value int64) {
+func (f *falconGauge) Sub(value int64) {
 	falcon.SetCounterCount(f.name, -value)
 }
 
 // Dec decrease value of counter, value = 1
 func (f *falconGauge) Dec() {
-	f.Decrease(1)
+	f.Sub(1)
 }
 
 type falconMeter struct {

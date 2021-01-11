@@ -11,7 +11,7 @@ type Gauge interface {
 	Add(value int64)
 	Inc()
 
-	Decrease(value int64)
+	Sub(value int64)
 	Dec()
 }
 

@@ -30,7 +30,7 @@ func (p *promGauge) Inc() {
 }
 
 // Decrease decrease value of counter
-func (p *promGauge) Decrease(value int64) {
+func (p *promGauge) Sub(value int64) {
 	p.Metric.WithLabelValues(p.LabelValue...).Add(-float64(value))
 }
 
