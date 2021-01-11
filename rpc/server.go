@@ -11,11 +11,11 @@ import (
 )
 
 // declare perfcounters
-var clientConnectionCounter metrics.Gauge
+var clientConnectionCount metrics.Gauge
 
 // Serve blocks until the connection shutdown.
 func Serve() error {
-	clientConnectionCounter = metrics.RegisterGauge("client_connection_count")
+	clientConnectionCount = metrics.RegisterGauge("client_connection_count")
 
 	addr, err := net.ResolveTCPAddr("tcp", "0.0.0.0:34601")
 	if err != nil {
@@ -32,7 +32,7 @@ func Serve() error {
 			logrus.Errorf("connection accept: %s", err)
 			continue
 		}
-		clientConnectionCounter.Inc()
+		clientConnectionCount.Inc()
 		// TODO(wutao): add connections management
 
 		// use one goroutine per connection
@@ -62,7 +62,7 @@ func serveConn(conn io.ReadWriteCloser, remoteAddr string) {
 				// TODO(wutao): send back rpc response for this error if the request is fully read
 				continue
 			}
-			clientConnectionCounter.Dec()
+			clientConnectionCount.Dec()
 			logrus.Infof("connection %s is closed", remoteAddr)
 			break
 		}

@@ -79,6 +79,7 @@ func init() {
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	ret, _, _ := globalClusterManager.ZkConn.Exists(zkRoot)
 	if !ret {
 		_, err := globalClusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
@@ -150,6 +151,7 @@ func TestGetMetaConnector(t *testing.T) {
 }
 
 func TestZookeeperUpdate(t *testing.T) {
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	for _, test := range tests {
 		_, _ = globalClusterManager.getMeta(test.table)
 		// update zookeeper node data and trigger the watch event update local cache
@@ -176,6 +178,7 @@ func TestZookeeperUpdate(t *testing.T) {
 }
 
 func TestParseTablePath(t *testing.T) {
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	type table struct {
 		path   string
 		result error

@@ -33,15 +33,15 @@ func Init(path string) {
 	viper.SetConfigType("yaml")
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			logrus.Panicf("unable find config file(meta-proxy.yml)")
+			logrus.Panicf("unable find config file \"%s\"", path)
 		} else {
-			logrus.Panicf("fatal error config file(meta-proxy.yml): %s", err)
+			logrus.Panicf("fatal error config file \"%s\":%s", path, err)
 		}
 	}
 
 	err := viper.Unmarshal(&GlobalConfig)
 	if err != nil {
-		logrus.Panicf("unable to decode into struct, %s", err)
+		logrus.Panicf("unable to decode \"%s\" into struct: %s", path, err)
 	}
 	logrus.Infof("init config: %v", GlobalConfig)
 }
