@@ -9,8 +9,16 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
 	"github.com/XiaoMi/pegasus-go-client/rpc"
 	"github.com/XiaoMi/pegasus-go-client/session"
+	"github.com/pegasus-kv/meta-proxy/config"
+	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	config.Init("../meta-proxy.yml")
+	_ = Serve()
+	metrics.Init()
+}
 
 func TestServeConn(t *testing.T) {
 	// mock connection and request

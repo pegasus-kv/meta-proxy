@@ -6,10 +6,14 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
+	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/pegasus-kv/meta-proxy/rpc"
 )
 
+var clientQueryConfigQPS metrics.Meter
+
 func Init() {
+	clientQueryConfigQPS = metrics.RegisterMeter("client_query_config_qps")
 	initClusterManager()
 
 	rpc.Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &rpc.MethodDefinition{
@@ -23,8 +27,9 @@ func Init() {
 }
 
 func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
-	var errorCode *base.ErrorCode
+	clientQueryConfigQPS.Update()
 
+	var errorCode *base.ErrorCode
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
 	meta, err := globalClusterManager.getMeta(tableName)

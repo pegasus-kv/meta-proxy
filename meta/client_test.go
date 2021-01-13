@@ -2,15 +2,18 @@ package meta
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/go-zookeeper/zk"
+	"github.com/pegasus-kv/meta-proxy/config"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-var testZkAddrs = []string{"127.0.0.1:22181"}
 
 type testCase struct {
 	table string
@@ -19,21 +22,22 @@ type testCase struct {
 	data  string
 }
 
+var zkRootTest = "/pegasus-cluster"
 var tests = []testCase{
 	{
 		table: "temp",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/temp",
+		path:  zkRootTest + "/temp",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 	{
 		table: "stat",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/stat",
+		path:  zkRootTest + "/stat",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 	{
 		table: "test",
 		addr:  "127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603",
-		path:  zkRoot + "/test",
+		path:  zkRootTest + "/test",
 		data:  "{\"cluster_name\": \"onebox\", \"meta_addrs\": \"127.0.0.1:34601,127.0.0.1:34602,127.0.0.1:34603\"}"},
 }
 
@@ -57,13 +61,25 @@ var updates = []update{
 	},
 }
 
+func initTestLog() {
+	writers := []io.Writer{
+		&lumberjack.Logger{
+			Filename:  "meta-proxy-test.log",
+			LocalTime: true,
+		},
+		os.Stdout}
+	logrus.SetOutput(io.MultiWriter(writers...))
+}
+
 // init the zk data
 func init() {
-	zkAddrs = testZkAddrs
-	zkWatcherCount = 2
+	initTestLog()
+	config.Init("../meta-proxy.yml")
+	config.GlobalConfig.ZookeeperOpts.WatcherCount = 2
 	initClusterManager()
 
 	acls := zk.WorldACL(zk.PermAll)
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	ret, _, _ := globalClusterManager.ZkConn.Exists(zkRoot)
 	if !ret {
 		_, err := globalClusterManager.ZkConn.Create(zkRoot, []byte{}, 0, zk.WorldACL(zk.PermAll))
@@ -86,25 +102,29 @@ func init() {
 
 func TestGetTable(t *testing.T) {
 	// pass zkAddr can't be connected
-	zkAddrs = []string{"128.0.0.1:22171"}
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"128.0.0.1:22171"}
 	initClusterManager()
 	_, err := globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_ZOOKEEPER_OPERATION)
 
-	zkAddrs = testZkAddrs
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"127.0.0.1:22181"}
 	initClusterManager()
 	// pass not existed table name
 	_, err = globalClusterManager.newTableInfo("notExist")
 	assert.Equal(t, err, base.ERR_OBJECT_NOT_FOUND)
 	// pass exist table
 	for _, test := range tests {
-		addrs, _ := globalClusterManager.newTableInfo(test.table)
+		addrs, err := globalClusterManager.newTableInfo(test.table)
+		if err != nil {
+			logrus.Panic(err)
+		}
 		assert.Equal(t, test.addr, addrs.metaAddrs)
 	}
 }
 
 func TestGetMetaConnector(t *testing.T) {
-	zkAddrs = testZkAddrs
+	config.GlobalConfig.ZookeeperOpts.Address = []string{"127.0.0.1:22181"}
+	initClusterManager()
 
 	// first get connector which will init the cache and only store `stat` and `test` table watcher
 	for _, test := range tests {
@@ -131,6 +151,7 @@ func TestGetMetaConnector(t *testing.T) {
 }
 
 func TestZookeeperUpdate(t *testing.T) {
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	for _, test := range tests {
 		_, _ = globalClusterManager.getMeta(test.table)
 		// update zookeeper node data and trigger the watch event update local cache
@@ -157,6 +178,7 @@ func TestZookeeperUpdate(t *testing.T) {
 }
 
 func TestParseTablePath(t *testing.T) {
+	zkRoot := config.GlobalConfig.ZookeeperOpts.Root
 	type table struct {
 		path   string
 		result error
