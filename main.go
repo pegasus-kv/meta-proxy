@@ -13,7 +13,7 @@ import (
 
 func main() {
 	logrus.SetOutput(&lumberjack.Logger{
-		Filename:  "meta-proxy.log",
+		Filename:  "/home/work/log/meta-proxy.log",
 		MaxSize:   500, // MB
 		MaxAge:    7,   // days
 		LocalTime: true,
