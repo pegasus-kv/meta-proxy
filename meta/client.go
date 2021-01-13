@@ -125,10 +125,10 @@ func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 		if err == zk.ErrNoNode {
 			logrus.Errorf("[%s] cluster info doesn't exist on zk[%s(%s)], err: %s", table, zkAddrs, path, err)
 			return nil, base.ERR_OBJECT_NOT_FOUND
-		} else {
-			logrus.Errorf("[%s] failed to get cluster info from zk[%s(%s)]: %s", table, zkAddrs, path, err)
-			return nil, base.ERR_ZOOKEEPER_OPERATION
 		}
+		logrus.Errorf("[%s] failed to get cluster info from zk[%s(%s)]: %s", table, zkAddrs, path, err)
+		return nil, base.ERR_ZOOKEEPER_OPERATION
+
 	}
 
 	type clusterInfoStruct struct {

@@ -13,26 +13,10 @@ golangci-lint:
     - go env -w GOPROXY=https://goproxy.cn,direct
     - golangci-lint run -v -E gofmt -E golint
 
-server-test:
-  stage: test
-  image: cr.d.xiaomi.net/containercloud/golang:1.14-centos7
-  script:
-    - go test -timeout 30s -race -v ./...
-
-sdk-test:
-  stage: test
-  image:
-    name: cr.d.xiaomi.net/containercloud/golang:1.14-centos7
-    entrypoint: [""]
-  variables:
-    GOPROXY: https://goproxy.cn
-  script:
-    - cd sdk && go test
-
 build_app:
   stage: build_app
   image:
-    name: cr.d.xiaomi.net/containercloud/golang:1.14-centos7
+    name: cr.d.xiaomi.net/containercloud/golang:1.15-centos7
     entrypoint: [""]
   variables:
     GO111MODULE: 'on'
