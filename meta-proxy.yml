@@ -1,5 +1,5 @@
 zookeeper:
-  address: [127.0.0.1:22181,127.0.0.2:22181]
+  address: [c3cloudsrv.zk.hadoop.srv:11000]
   root: /pegasus-cluster
   timeout: 1000 # ms
   table_watcher_cache_capacity: 1024
