@@ -213,7 +213,7 @@ func parseToMetaList(metaAddrs string) ([]string, error) {
 //            /<table2> => {JSON}
 func parseToTableName(path string) (string, error) {
 	result := strings.Split(path, "/")
-	if len(result) != 3 {
+	if len(result) < 2 {
 		return "", fmt.Errorf("the path[%s] is invalid", path)
 	}
 
