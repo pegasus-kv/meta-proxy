@@ -1,6 +1,6 @@
 zookeeper:
   address: [c3cloudsrv.zk.hadoop.srv:11000]
-  root: /pegasus-cluster
+  root: /pegasus/c3tst-metaproxy
   timeout: 1000 # ms
   table_watcher_cache_capacity: 1024
 
