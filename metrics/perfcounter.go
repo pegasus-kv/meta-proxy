@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"strings"
+
 	"github.com/pegasus-kv/meta-proxy/config"
 	"github.com/sirupsen/logrus"
 )
@@ -9,18 +11,25 @@ import (
 // connection number
 type Gauge interface {
 	Add(value int64)
+	AddWithTags(tagsValue []string, counterValue int64)
+
 	Inc()
+	IncWithTags(tagsValue []string)
 
 	Sub(value int64)
+	SubWithTags(tagsValue []string, counterValue int64)
+
 	Dec()
+	DecWithTags(tagsValue []string)
 }
 
 // Meter is the generic type for performance counters which only can be `add`, for example, used for request-rate(qps)
 type Meter interface {
 	Update()
+	UpdateWithTags(tagsValue []string)
 }
 
-// init metric base config
+// init metrics base config
 func Init() {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
@@ -29,40 +38,49 @@ func Init() {
 	} else if mtype == "falcon" {
 		return
 	}
-	logrus.Panicf("no support metric type: %s", mtype)
+	logrus.Panicf("no support tags type: %s", mtype)
 }
 
-func RegisterGauge(name string) Gauge {
+func RegisterGauge(counterName string) Gauge {
+	return RegisterGaugeWithTags(counterName, []string{})
+}
+
+func RegisterGaugeWithTags(counterName string, tagsName []string) Gauge {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
-		labelsName, labelsValue := parseTags()
-		return registerPromGauge(name, labelsName, labelsValue)
+		return registerPromGauge(counterName, tagsName)
 	} else if mtype == "falcon" {
-		return registerFalconGauge(name)
+		return registerFalconGauge(counterName, tagsName)
 	}
-	logrus.Panicf("no support metric type: %s", mtype)
+	logrus.Panicf("no support tagsName type: %s", mtype)
 	return nil
 }
 
 func RegisterMeter(name string) Meter {
+	return RegisterMeterWithTags(name, []string{})
+}
+
+func RegisterMeterWithTags(counterName string, tagsName []string) Meter {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
-		labelsName, labelsValue := parseTags()
-		return registerPromMeter(name, labelsName, labelsValue)
+		return registerPromMeter(counterName, tagsName)
 	} else if mtype == "falcon" {
-		return registerFalconMeter(name)
+		return registerFalconMeter(counterName, tagsName)
 	}
-	logrus.Panicf("no support metric type: %s", mtype)
+	logrus.Panicf("no support tags type: %s", mtype)
 	return nil
 }
 
-// parse map tags into prometheus labels format->(LabelsName, LabelsValue)
-func parseTags() ([]string, []string) {
-	var labelsName []string
-	var labelsValue []string
-	for key, value := range config.GlobalConfig.MetricsOpts.Tags {
-		labelsName = append(labelsName, key)
-		labelsValue = append(labelsValue, value)
+func combineConfigTagsName(tagsName []string) []string {
+	for _, tag := range config.GlobalConfig.MetricsOpts.Tags {
+		tagsName = append(tagsName, strings.Split(tag, "=")[0])
 	}
-	return labelsName, labelsValue
+	return tagsName
+}
+
+func combineConfigTagsValue(tagsValue []string) []string {
+	for _, tag := range config.GlobalConfig.MetricsOpts.Tags {
+		tagsValue = append(tagsValue, strings.Split(tag, "=")[1])
+	}
+	return tagsValue
 }

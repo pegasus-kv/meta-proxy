@@ -13,11 +13,12 @@ import (
 
 func main() {
 	logrus.SetOutput(&lumberjack.Logger{
-		Filename:  "/home/work/log/meta-proxy.log",
+		Filename:  os.Args[2],
 		MaxSize:   500, // MB
 		MaxAge:    7,   // days
 		LocalTime: true,
 	})
+
 	config.Init(os.Args[1])
 	meta.Init()
 	err := rpc.Serve()

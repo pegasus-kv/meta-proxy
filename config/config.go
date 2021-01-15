@@ -15,8 +15,8 @@ type zookeeperOpts struct {
 
 // metricsOpts used for init the perfCounter type(now support the Falcon and Prometheus) and
 type metricsOpts struct {
-	Type string            `mapstructure:"type"`
-	Tags map[string]string `mapstructure:"tags"`
+	Type string   `mapstructure:"type"`
+	Tags []string `mapstructure:"tags"`
 }
 
 var GlobalConfig Configuration
