@@ -26,7 +26,7 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.29
-          args: -E gofmt,golint,bodyclose,exhaustive,exportloopref,gci
+          args: -E gofmt,golint,bodyclose,exhaustive,exportloopref,goimports
 
   build:
     name: Build
