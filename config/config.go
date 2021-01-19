@@ -27,7 +27,7 @@ type Configuration struct {
 	MetricsOpts   metricsOpts   `mapstructure:"metric"`
 }
 
-// init meta-proxy config using the config file
+// Init meta-proxy config using the config file
 func Init(path string) {
 	viper.SetConfigFile(path)
 	viper.SetConfigType("yaml")
