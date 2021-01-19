@@ -60,7 +60,6 @@ func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 func parseToErrorCode(err error) *base.ErrorCode {
 	if dsnErr, ok := err.(base.DsnErrCode); ok {
 		return &base.ErrorCode{Errno: dsnErr.String()}
-	} else {
-		return &base.ErrorCode{Errno: base.ERR_UNKNOWN.String()}
 	}
+	return &base.ErrorCode{Errno: base.ERR_UNKNOWN.String()}
 }

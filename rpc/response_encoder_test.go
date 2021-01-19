@@ -2,13 +2,14 @@ package rpc
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
 	"github.com/XiaoMi/pegasus-go-client/rpc"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // TestEncoderWriteResponse ensures a response written by responseEncoder can be read by pegasus-go-client.
