@@ -47,6 +47,7 @@ func TestPrometheus(t *testing.T) {
 	time.Sleep(10000000)
 	resp, err := http.Get("http://localhost:9091/metrics")
 	assert.Nil(t, err)
+	defer resp.Body.Close()
 	// the resp page content like: "counter value \n counter value \n"
 	body, _ := ioutil.ReadAll(resp.Body)
 	result := strings.Split(string(body), "\n")

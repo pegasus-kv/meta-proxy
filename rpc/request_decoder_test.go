@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
@@ -33,7 +34,7 @@ func newFakeConn(readBytes []byte) *fakeConn {
 	return &fakeConn{rbuf: bytes.NewBuffer(readBytes), wbuf: bytes.NewBuffer(nil)}
 }
 
-func testSetUpQueryConfigRPC(resp *replication.QueryCfgResponse) {
+func registerQueryConfigRPC(resp *replication.QueryCfgResponse) {
 	Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &MethodDefinition{
 		RequestCreator: func() RequestArgs {
 			return &rrdb.MetaQueryCfgArgs{
@@ -48,7 +49,7 @@ func testSetUpQueryConfigRPC(resp *replication.QueryCfgResponse) {
 	})
 }
 
-func testCleanupRPCRegsitration() {
+func unregisterAllRPC() {
 	// do cleanup after test
 	globalMethodRegistry.nameToMethod = make(map[string]*MethodDefinition)
 }
@@ -62,7 +63,8 @@ func TestDecoderReadRequest(t *testing.T) {
 	arg.Query.PartitionIndices = []int32{}
 
 	// register method
-	testSetUpQueryConfigRPC(nil)
+	registerQueryConfigRPC(nil)
+	defer unregisterAllRPC()
 
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), seqID, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
@@ -80,7 +82,6 @@ func TestDecoderReadRequest(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, *queryCfgArg, *arg)
 
-	testCleanupRPCRegsitration()
 }
 
 // TestDecoderHandleRequest ensures a request can invokes its corresponding method.
@@ -89,9 +90,10 @@ func TestDecoderHandleRequest(t *testing.T) {
 	arg.Query = replication.NewQueryCfgRequest()
 
 	// QueryConfig definitely returns ERR_INVALID_STATE
-	testSetUpQueryConfigRPC(&replication.QueryCfgResponse{
+	registerQueryConfigRPC(&replication.QueryCfgResponse{
 		Err: &base.ErrorCode{Errno: base.ERR_INVALID_STATE.String()},
 	})
+	defer unregisterAllRPC()
 
 	rcall, err := session.MarshallPegasusRpc(session.NewPegasusCodec(), int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
 	assert.Nil(t, err)
@@ -102,8 +104,6 @@ func TestDecoderHandleRequest(t *testing.T) {
 	resp := req.handler(context.Background(), req.args)
 	queryCfgResp := resp.(*rrdb.MetaQueryCfgResult)
 	assert.Equal(t, queryCfgResp.Success.Err.Errno, "ERR_INVALID_STATE")
-
-	testCleanupRPCRegsitration()
 }
 
 func TestDecoderHandleUnsupportedRequest(t *testing.T) {
@@ -115,4 +115,20 @@ func TestDecoderHandleUnsupportedRequest(t *testing.T) {
 	dec := &requestDecoder{reader: newFakeConn(rcall.RawReq)}
 	_, err = dec.readRequest()
 	assert.NotNil(t, err) // method-not-found
+}
+
+func TestUnexpectedRPCProtocol(t *testing.T) {
+	body := bytes.NewBufferString("hello")
+	httpReq, err := http.NewRequest(http.MethodGet, "www.baidu.com", body)
+	assert.Nil(t, err)
+
+	// marshall a fake http request into bytes.
+	buf := bytes.NewBuffer(nil)
+	err = httpReq.Write(buf)
+	assert.Nil(t, err)
+
+	// verify if requestDecoder fails on receiving invalid rpc protocol.
+	dec := &requestDecoder{reader: newFakeConn(buf.Bytes())}
+	_, err = dec.readRequest()
+	assert.NotNil(t, err)
 }

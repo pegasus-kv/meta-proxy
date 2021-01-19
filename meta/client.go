@@ -125,7 +125,6 @@ func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
 		}
 		logrus.Errorf("[%s] failed to get cluster info from zk[%s(%s)]: %s", table, zkAddrs, path, err)
 		return nil, base.ERR_ZOOKEEPER_OPERATION
-
 	}
 
 	type clusterInfoStruct struct {

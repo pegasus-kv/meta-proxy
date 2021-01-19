@@ -43,7 +43,8 @@ func TestServeConn(t *testing.T) {
 		PartitionCount: 128,
 		Partitions:     []*replication.PartitionConfiguration{},
 	}
-	testSetUpQueryConfigRPC(resp)
+	registerQueryConfigRPC(resp)
+	defer unregisterAllRPC()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -64,5 +65,4 @@ func TestServeConn(t *testing.T) {
 		assert.Equal(t, *queryCfgRes.Success, *resp)
 	}
 
-	testCleanupRPCRegsitration()
 }
