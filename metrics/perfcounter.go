@@ -29,7 +29,7 @@ type Meter interface {
 	UpdateWithTags(tagsValue []string)
 }
 
-// init metrics base config
+// Init metric base config
 func Init() {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
@@ -41,10 +41,12 @@ func Init() {
 	logrus.Panicf("no support tags type: %s", mtype)
 }
 
+// RegisterGauge using counter name with default tags in config
 func RegisterGauge(counterName string) Gauge {
 	return RegisterGaugeWithTags(counterName, []string{})
 }
 
+// RegisterGaugeWithTags using counter name with custom tags and default tags of config
 func RegisterGaugeWithTags(counterName string, tagsName []string) Gauge {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
@@ -56,10 +58,12 @@ func RegisterGaugeWithTags(counterName string, tagsName []string) Gauge {
 	return nil
 }
 
-func RegisterMeter(name string) Meter {
-	return RegisterMeterWithTags(name, []string{})
+// RegisterMeter using counter name with default tags in config
+func RegisterMeter(counterName string) Meter {
+	return RegisterMeterWithTags(counterName, []string{})
 }
 
+// RegisterMeterWithTags using counter name with custom tags and default tags of config
 func RegisterMeterWithTags(counterName string, tagsName []string) Meter {
 	mtype := config.GlobalConfig.MetricsOpts.Type
 	if mtype == "prometheus" {
@@ -71,6 +75,7 @@ func RegisterMeterWithTags(counterName string, tagsName []string) Meter {
 	return nil
 }
 
+// join default tagsName of config and custom tagsName
 func combineConfigTagsName(tagsName []string) []string {
 	for _, tag := range config.GlobalConfig.MetricsOpts.Tags {
 		tagsName = append(tagsName, strings.Split(tag, "=")[0])
@@ -78,6 +83,7 @@ func combineConfigTagsName(tagsName []string) []string {
 	return tagsName
 }
 
+// join default tagsValue of config and custom tagsValue
 func combineConfigTagsValue(tagsValue []string) []string {
 	for _, tag := range config.GlobalConfig.MetricsOpts.Tags {
 		tagsValue = append(tagsValue, strings.Split(tag, "=")[1])

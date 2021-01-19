@@ -81,6 +81,7 @@ func registerFalconMeter(counterName string, tagsName []string) *falconMeter {
 	}
 }
 
+// transfer counterName registered and tags into final counterName
 func parseToCounterName(counterName string, tagsName []string, tagsValue []string) string {
 	if len(tagsName) == 0 {
 		return counterName
