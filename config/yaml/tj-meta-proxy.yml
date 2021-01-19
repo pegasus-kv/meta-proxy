@@ -1,9 +1,0 @@
-zookeeper:
-  address: [tjwqtst.zk.hadoop.srv:21000]
-  root: /pegasus/tjwqtst-metaproxy
-  timeout: 1000 # ms
-  table_watcher_cache_capacity: 2
-
-metric:
-  type: falcon
-  tags: [region=tjwqtst_staging,service=meta_proxy]

@@ -1,9 +1,0 @@
-zookeeper:
-  address: [c3cloudsrv.zk.hadoop.srv:11000]
-  root: /pegasus/c3srv-metaproxy
-  timeout: 1000 # ms
-  table_watcher_cache_capacity: 1024
-
-metric:
-  type: falcon
-  tags: [region=c3srv_cluster,service=meta_proxy]
