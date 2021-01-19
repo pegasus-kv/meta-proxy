@@ -61,6 +61,7 @@ func initClusterManager() {
 	}
 }
 
+// return (metaAddr, metaManager, error)
 func (m *ClusterManager) getMeta(table string) (string, *session.MetaManager, error) {
 	var addrs string
 	var meta *session.MetaManager
