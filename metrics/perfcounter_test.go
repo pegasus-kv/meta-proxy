@@ -79,6 +79,6 @@ func TestFalcon(t *testing.T) {
 	gaugeCounterNoTags.Dec()
 
 	// mock the falconMeter
-	meterCounterWithTags.Update()
+	meterCounterWithTags.UpdateWithTags([]string{"temp"})
 	meterCounterNoTags.Update()
 }
