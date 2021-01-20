@@ -3,6 +3,7 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"net/http"
 	"testing"
 
@@ -131,4 +132,50 @@ func TestUnexpectedRPCProtocol(t *testing.T) {
 	dec := &requestDecoder{reader: newFakeConn(buf.Bytes())}
 	_, err = dec.readRequest()
 	assert.NotNil(t, err)
+}
+
+func TestV1ProtocolReadRequest(t *testing.T) {
+	seqID := int32(1)
+	gpid := &base.Gpid{Appid: 3, PartitionIndex: 4}
+	arg := rrdb.NewMetaQueryCfgArgs()
+	arg.Query = replication.NewQueryCfgRequest()
+	arg.Query.AppName = "test"
+	arg.Query.PartitionIndices = []int32{}
+
+	// register method
+	registerQueryConfigRPC(nil)
+	defer unregisterAllRPC()
+
+	rcall, err := session.MarshallPegasusRpc(&pegasusV1Codec{}, seqID, gpid, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
+	assert.Nil(t, err)
+
+	dec := &requestDecoder{
+		reader: newFakeConn(rcall.RawReq),
+	}
+	req, err := dec.readRequest()
+	assert.Nil(t, err)
+	assert.Equal(t, req.seqID, uint64(seqID))
+	assert.Equal(t, req.reqv1.meta.GetAppID(), gpid.Appid)
+	assert.Equal(t, req.reqv1.meta.GetPartitionIndex(), gpid.PartitionIndex)
+}
+
+func TestV1ProtocolHandleBadRequest(t *testing.T) {
+	arg := rrdb.NewMetaQueryCfgArgs()
+	arg.Query = replication.NewQueryCfgRequest()
+
+	rcall, err := session.MarshallPegasusRpc(&pegasusV1Codec{}, int32(1), &base.Gpid{}, arg, "RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX")
+	assert.Nil(t, err)
+	binary.BigEndian.PutUint32(rcall.RawReq[4:8], 999) // illegal protocol version
+
+	dec := &requestDecoder{reader: newFakeConn(rcall.RawReq)}
+	_, err = dec.readRequest()
+	assert.NotNil(t, err) // invalid request header version
+
+	for i := 1; i < len(rcall.RawReq); i++ {
+		buf := rcall.RawReq[:i] // truncate a part of the request, see if our error handling is correct
+
+		dec := &requestDecoder{reader: newFakeConn(buf)}
+		_, err = dec.readRequest()
+		assert.NotNil(t, err)
+	}
 }
