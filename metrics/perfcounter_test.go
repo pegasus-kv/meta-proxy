@@ -62,15 +62,23 @@ func TestFalcon(t *testing.T) {
 	counterName := parseToCounterName("counterName", []string{"table"}, []string{"temp"})
 	assert.Equal(t, "counterName,table=temp,region=local_tst,service=meta_proxy", counterName)
 
-	gaugeCounter := RegisterGauge("falconGaugeTest")
-	meterCounter := RegisterMeter("falconMeterTest")
+	gaugeCounterWithTags := RegisterGaugeWithTags("falconGaugeTest", []string{"table"})
+	meterCounterWithTags := RegisterMeterWithTags("falconMeterTest", []string{"table"})
+	gaugeCounterNoTags := RegisterGauge("falconGaugeTest")
+	meterCounterNoTags := RegisterMeter("falconMeterTest")
 	Init()
 	// mock the falconGauge counter
-	gaugeCounter.Add(100)
-	gaugeCounter.Inc()
-	gaugeCounter.Sub(100)
-	gaugeCounter.Dec()
+	gaugeCounterWithTags.AddWithTags([]string{"temp"}, 100)
+	gaugeCounterWithTags.IncWithTags([]string{"temp"})
+	gaugeCounterWithTags.SubWithTags([]string{"temp"}, 100)
+	gaugeCounterWithTags.DecWithTags([]string{"temp"})
+
+	gaugeCounterNoTags.Add(100)
+	gaugeCounterNoTags.Inc()
+	gaugeCounterNoTags.Sub(100)
+	gaugeCounterNoTags.Dec()
 
 	// mock the falconMeter
-	meterCounter.Update()
+	meterCounterWithTags.Update()
+	meterCounterNoTags.Update()
 }
