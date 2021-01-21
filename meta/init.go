@@ -11,10 +11,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var clientQueryConfigQPS metrics.Meter
+var clientQueryConfigCount metrics.Meter
 
 func Init() {
-	clientQueryConfigQPS = metrics.RegisterMeterWithTags("client_query_config_qps", []string{"table"})
+	clientQueryConfigCount = metrics.RegisterMeterWithTags("client_query_config_count", []string{"table"})
 	initClusterManager()
 
 	rpc.Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &rpc.MethodDefinition{
@@ -31,7 +31,7 @@ func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 	var errorCode *base.ErrorCode
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
-	clientQueryConfigQPS.UpdateWithTags([]string{tableName})
+	clientQueryConfigCount.UpdateWithTags([]string{tableName})
 
 	addrs, meta, err := globalClusterManager.getMeta(tableName)
 	if err != nil {

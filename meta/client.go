@@ -13,8 +13,11 @@ import (
 	"github.com/bluele/gcache"
 	"github.com/go-zookeeper/zk"
 	"github.com/pegasus-kv/meta-proxy/config"
+	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/sirupsen/logrus"
 )
+
+var zkRequestCount metrics.Meter
 
 var globalClusterManager *ClusterManager
 
@@ -43,6 +46,8 @@ type TableInfoWatcher struct {
 }
 
 func initClusterManager() {
+	zkRequestCount = metrics.RegisterMeterWithTags("zk_request_count", []string{"table"})
+
 	zkAddrs := config.GlobalConfig.ZookeeperOpts.Address
 	zkConn, _, err := zk.Connect(config.GlobalConfig.ZookeeperOpts.Address,
 		time.Duration(config.GlobalConfig.ZookeeperOpts.Timeout*1000000)) // the config value unit is ms, but zk request ns)
@@ -115,6 +120,8 @@ func (m *ClusterManager) getMeta(table string) (string, *session.MetaManager, er
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
 //                         }
 func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
+	zkRequestCount.UpdateWithTags([]string{table})
+
 	path := fmt.Sprintf("%s/%s", config.GlobalConfig.ZookeeperOpts.Root, table)
 	value, _, watcherEvent, err := m.ZkConn.GetW(path)
 	zkAddrs := config.GlobalConfig.ZookeeperOpts.Address
