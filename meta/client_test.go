@@ -74,7 +74,7 @@ func initTestLog() {
 // init the zk data
 func init() {
 	initTestLog()
-	config.Init("../config/yaml/local-meta-proxy.yml")
+	config.Init("../config/yaml/meta-proxy-example.yml")
 	config.GlobalConfig.ZookeeperOpts.WatcherCount = 2
 	initClusterManager()
 

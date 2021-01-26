@@ -1,13 +1,12 @@
 package config
 
 import (
-	"testing"
-
 	"github.com/magiconair/properties/assert"
+	"testing"
 )
 
 func TestConfig(t *testing.T) {
-	Init("yaml/local-meta-proxy.yml")
+	Init("yaml/meta-proxy-example.yml")
 	config := Configuration{
 		ZookeeperOpts: zookeeperOpts{
 			Address:      []string{"127.0.0.1:22181", "127.0.0.2:22181"},
