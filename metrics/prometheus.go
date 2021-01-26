@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// promGauge tags for reporting the current total number which can be "add" or "delete"
+// promGauge promGauge for reporting the current total number which can be "add" or "delete"
 type promGauge struct {
 	labelsName []string
 	metric     *prometheus.GaugeVec
