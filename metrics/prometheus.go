@@ -54,7 +54,7 @@ func (p *promGauge) DecWithTags(tagsValue []string) {
 	p.metric.WithLabelValues(combineConfigTagsValue(tagsValue)...).Dec()
 }
 
-// promMeter tags for reporting the rate number which only can be "add"
+// promMeter promMeter for reporting the rate number which only can be "add"
 // and the rate get by using like "rate(counter_name[5m])" in web query page ***/
 type promMeter struct {
 	labelsName []string
