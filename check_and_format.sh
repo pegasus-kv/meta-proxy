@@ -27,6 +27,7 @@ if [ ! -f "${PROJECT_DIR}"/golangci-lint-1.35.2-linux-amd64/golangci-lint ]; the
     tar -xzvf golangci-lint-1.35.2-linux-amd64.tar.gz
 fi
 
-gofmt -l -w .
+gofmt -l -w -s .
+goimports -w .
 go mod tidy
 golangci-lint-1.35.2-linux-amd64/golangci-lint run -v -E gofmt -E golint
