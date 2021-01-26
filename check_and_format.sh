@@ -22,11 +22,12 @@
 PROJECT_DIR=$(dirname "${SCRIPT_DIR}")
 cd "${PROJECT_DIR}" || exit 1
 
-if [ ! -f "${PROJECT_DIR}"/golangci-lint-1.29.0-linux-amd64/golangci-lint ]; then
-    wget https://github.com/golangci/golangci-lint/releases/download/v1.29.0/golangci-lint-1.29.0-linux-amd64.tar.gz
-    tar -xzvf golangci-lint-1.29.0-linux-amd64.tar.gz
+if [ ! -f "${PROJECT_DIR}"/golangci-lint-1.35.2-linux-amd64/golangci-lint ]; then
+    wget https://github.com/golangci/golangci-lint/releases/download/v1.35.2/golangci-lint-1.35.2-linux-amd64.tar.gz
+    tar -xzvf golangci-lint-1.35.2-linux-amd64.tar.gz
 fi
 
-gofmt -l -w .
+gofmt -l -w -s .
+goimports -w .
 go mod tidy
-golangci-lint-1.29.0-linux-amd64/golangci-lint run
+golangci-lint-1.35.2-linux-amd64/golangci-lint run -v -E gofmt -E golint

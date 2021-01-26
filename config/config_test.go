@@ -7,7 +7,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	Init("../meta-proxy.yml")
+	Init("yaml/meta-proxy-example.yml")
 	config := Configuration{
 		ZookeeperOpts: zookeeperOpts{
 			Address:      []string{"127.0.0.1:22181", "127.0.0.2:22181"},
@@ -17,10 +17,7 @@ func TestConfig(t *testing.T) {
 		},
 		MetricsOpts: metricsOpts{
 			Type: "falcon",
-			Tags: map[string]string{
-				"region":  "c3tst_staging",
-				"service": "meta_proxy",
-			},
+			Tags: []string{"region=local_tst", "service=meta_proxy"},
 		},
 	}
 
