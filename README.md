@@ -28,7 +28,7 @@ make
 ```shell
 ./meta-proxy meta-proxy.yaml meta-proxy.log
 ```
-以上命令表明使用`meta-proxy.yaml`文件配置启动服务，并输出日志到`meta-proxy.log`
+以上命令表明使用`meta-proxy.yaml`文件配置启动服务，并输出日志到`meta-proxy.log`,
 典型的`meta-proxy.yaml`配置如下所示：
 ```yaml
 zookeeper:
