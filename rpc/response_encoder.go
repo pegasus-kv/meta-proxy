@@ -50,5 +50,9 @@ func (e *responseEncoder) doSendResponse(req *pegasusRequest, result ResponseRes
 	// response length is now got
 	respLen := buf.Len()
 	binary.BigEndian.PutUint32(buf.Bytes(), uint32(respLen))
+
+	if _, err := e.writer.Write(buf.Bytes()); err != nil {
+		return err
+	}
 	return nil
 }

@@ -18,3 +18,5 @@
 
 build:
 	go build -o bin/meta-proxy main.go
+ci:
+	go test -race -v -test.timeout 2m -coverprofile=coverage.txt -covermode=atomic ./...

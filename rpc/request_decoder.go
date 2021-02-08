@@ -13,19 +13,17 @@ type requestV0 struct {
 	hdrLength uint32 // always 48
 
 	meta *requestMetaV0
-
-	body []byte
 }
 
 type requestMetaV0 struct {
-	hdrCRC32            uint32
-	bodyLength          uint32
-	bodyCRC32           uint32
-	appID               uint32
-	partitionIndex      uint32
-	clientTimeout       uint32
-	clientThreadHash    uint32
-	clientPartitionHash uint64
+	/* hdrCRC32 int32 */ // unused
+	bodyLength           uint32
+	/* bodyCRC32 uint32 */ // unused
+	appID                  uint32
+	partitionIndex         uint32
+	clientTimeout          uint32
+	clientThreadHash       uint32
+	clientPartitionHash    uint64
 }
 
 type requestV1 struct {
@@ -39,7 +37,7 @@ type requestDecoder struct {
 	reader io.Reader
 }
 
-// pegasusProtocolFlag is a const flag to indentify if the RPC request is legal.
+// pegasusProtocolFlag is a const flag to identify if the RPC request is legal.
 var pegasusProtocolFlag = []byte("THFT")
 
 //
@@ -57,7 +55,7 @@ var pegasusProtocolFlag = []byte("THFT")
 //
 
 type pegasusRequest struct {
-	// reqv0/reqv1 can have only one to be non-nil.
+	// reqv0 / reqv1 can have only one to be non-nil.
 	reqv0 *requestV0
 	reqv1 *requestV1
 
@@ -75,13 +73,13 @@ func (d *requestDecoder) readRequest() (*pegasusRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if bytes.Compare(flag, pegasusProtocolFlag) != 0 {
+	if !bytes.Equal(flag, pegasusProtocolFlag) {
 		return nil, fmt.Errorf("invalid rdsn rpc protocol: %s", flag)
 	}
 
 	// read header version
 	hdrVersionBytes := make([]byte, 4)
-	_, err = io.ReadFull(d.reader, flag)
+	_, err = io.ReadFull(d.reader, hdrVersionBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -162,6 +160,7 @@ func (d *requestDecoder) readRequestV1() (*pegasusRequest, error) {
 	if err != nil {
 		return nil, err
 	}
+	reqv1.meta = meta
 
 	// read request body
 	err = d.readRequestBody(pegasusReq, reqv1.bodyLength)

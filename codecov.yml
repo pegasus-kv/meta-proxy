@@ -1,0 +1,2 @@
+ignore:
+  - "rpc/thrift_meta.go"

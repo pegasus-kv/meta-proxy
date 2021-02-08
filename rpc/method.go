@@ -19,9 +19,8 @@ type methodRegistry struct {
 func findMethodByName(name string) (*MethodDefinition, error) {
 	if method, ok := (&globalMethodRegistry).nameToMethod[name]; ok {
 		return method, nil
-	} else {
-		return nil, fmt.Errorf("unsupported rpc name \"%s\"", name)
 	}
+	return nil, fmt.Errorf("unsupported rpc name \"%s\"", name)
 }
 
 var globalMethodRegistry methodRegistry
