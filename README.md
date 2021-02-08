@@ -1,7 +1,7 @@
 # Meta-Proxy
 [![codecov](https://codecov.io/gh/pegasus-kv/meta-proxy/branch/main/graph/badge.svg?token=AGKH2FIJHR)](https://codecov.io/gh/pegasus-kv/meta-proxy)
 
-# 概况
+# 概述
 Meta-Proxy是Pegasus集群的表配置管理中心，客户端（兼容1.X和2.X的版本）在访问不同集群的表时不再配置Meta-Server地址，而是统一配置成Meta-Proxy的地址，这使得Pegasus的Meta变更对客户端侧完全透明。典型的应用场景包括：  
 * 下线/替换Meta Server机器
 * 主备集群容灾切换
