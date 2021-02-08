@@ -7,7 +7,7 @@ Meta-Proxy是Pegasus集群的表配置管理中心，客户端（兼容1.X和2.X
 * 主备集群容灾切换
 
 # 设计
-Meta-Proxy本质是Pegasus MetaServer的无状态RPC代理服务，依靠ZK存储和监听表配置的变更，并实时的反应到客户端侧。在ZK节点上存储的典型信息如下：
+Meta-Proxy本质是Pegasus MetaServer的无状态RPC代理服务，依靠ZK存储和监听表配置的变更，并反应到客户端侧。在ZK节点上存储的典型信息如下：
 /ZKPathRoot/table/=>
 ```json
  {
