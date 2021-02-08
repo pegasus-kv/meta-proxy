@@ -16,10 +16,10 @@ Meta-Proxy本质是Pegasus MetaServer的无状态RPC代理服务，依靠ZK存�
 }
 ```
 当客户端向Meta-Proxy请求某个表的信息：
-* 如果本地已经缓存的有表信息或者与Meta-Server的链接，将会优先使用缓存获取表信息；
-* 如果本地缓存无对应表的信息，Meta-Proxy会从ZK上获取该表所在集群的Meta-Server地址；
+* 如果本地已经缓存的有表信息或者与Meta-Server的链接，将会优先使用缓存信息；
+* 如果本地缓存无对应表的信息，Meta-Proxy会从ZK上获取该表所在集群的Meta-Server地址，并把表信息和链接缓存到本地缓存中；
 * 如果ZK上的表信息发声变更，Meta-Proxy会通过zk watcher监听并实时变更表信息；
-* 成功获取表信息后，向对应的Meta-Server地址发起请求并把结果返回给客户端。
+* 成功获取表信息和建立与Meta-Server的连接后，向Pegasus发起请求并把结果返回给客户端。
 
 # 使用
 ## 编译
