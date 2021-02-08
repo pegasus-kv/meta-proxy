@@ -57,3 +57,11 @@ time="2021-02-07T14:26:46+08:00" level=info msg="start server listen: [::]:34601
 
 **注**：更换客户端配置前，请确保Meta-Proxy连接的ZK节点已经配置好对应表的信息
 
+# 监控
+Meta-Proxy默认支持prometheus和falcon监控，并添加了三个监控指标以展示当前Meta-Proxy的服务状态：  
+* client_connection_count: 记录客户端的连接数
+* zk_request_count: 记录客户端的请求中从ZK上请求表信息的个数/QPS，即本地表信息缓存失效的请求数/QPS
+* client_query_config_count: 客户端请求数/QPS
+
+用户也可以根据实际服务需求配置自定义的监控指标。目前的支持的指标类型包括：count/meter、gauge
+
