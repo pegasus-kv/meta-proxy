@@ -53,5 +53,7 @@ time="2021-02-07T14:26:46+08:00" level=info msg="init config: {{[127.0.0.1:22181
 time="2021-02-07T14:26:46+08:00" level=info msg="start server listen: [::]:34601"
 ```
 ## 客户端配置
-客户端只需把原来的meta-server地址改配置成meta-proxy的地址即可
+客户端只需把原来的meta-server地址改配置成meta-proxy的地址即可。
+
+**注**：更换客户端配置前，请确保Meta-Proxy连接的ZK节点已经配置好对应表的信息
 
