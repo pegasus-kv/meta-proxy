@@ -1,4 +1,4 @@
-# Meta-Proxy
+# Meta-Proxy: Pegasus表配置中心
 [![codecov](https://codecov.io/gh/pegasus-kv/meta-proxy/branch/main/graph/badge.svg?token=AGKH2FIJHR)](https://codecov.io/gh/pegasus-kv/meta-proxy)
 
 # 概述
