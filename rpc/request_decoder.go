@@ -98,7 +98,7 @@ func (d *requestDecoder) readRequest() (*pegasusRequest, error) {
 
 	// read header version
 	hdrVersionBytes := make([]byte, 4)
-	_, err = io.ReadFull(d.reader, flag)
+	_, err = io.ReadFull(d.reader, hdrVersionBytes)
 	if err != nil {
 		return nil, err
 	}

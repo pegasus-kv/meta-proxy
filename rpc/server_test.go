@@ -34,7 +34,7 @@ import (
 )
 
 func init() {
-	config.Init("../meta-proxy.yml")
+	config.Init("../config/yaml/meta-proxy-example.yml")
 	_ = Serve()
 	metrics.Init()
 }

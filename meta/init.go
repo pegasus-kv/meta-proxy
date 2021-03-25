@@ -27,12 +27,13 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/rrdb"
 	"github.com/pegasus-kv/meta-proxy/metrics"
 	"github.com/pegasus-kv/meta-proxy/rpc"
+	"github.com/sirupsen/logrus"
 )
 
-var clientQueryConfigQPS metrics.Meter
+var clientQueryConfigCount metrics.Meter
 
 func Init() {
-	clientQueryConfigQPS = metrics.RegisterMeter("client_query_config_qps")
+	clientQueryConfigCount = metrics.RegisterMeterWithTags("client_query_config_count", []string{"table"})
 	initClusterManager()
 
 	rpc.Register("RPC_CM_QUERY_PARTITION_CONFIG_BY_INDEX", &rpc.MethodDefinition{
@@ -46,12 +47,12 @@ func Init() {
 }
 
 func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
-	clientQueryConfigQPS.Update()
-
 	var errorCode *base.ErrorCode
 	queryCfgArgs := args.(*rrdb.MetaQueryCfgArgs)
 	tableName := queryCfgArgs.Query.AppName
-	meta, err := globalClusterManager.getMeta(tableName)
+	clientQueryConfigCount.UpdateWithTags([]string{tableName})
+
+	addrs, meta, err := globalClusterManager.getMeta(tableName)
 	if err != nil {
 		errorCode = parseToErrorCode(err)
 		return &rrdb.MetaQueryCfgResult{
@@ -69,6 +70,10 @@ func queryConfig(ctx context.Context, args rpc.RequestArgs) rpc.ResponseResult {
 				Err: errorCode,
 			},
 		}
+	}
+
+	if resp.GetErr().Errno != base.ERR_OK.String() {
+		logrus.Errorf("[%s] failed to query config from [%s], err = %s", tableName, addrs, resp.Err)
 	}
 
 	return &rrdb.MetaQueryCfgResult{

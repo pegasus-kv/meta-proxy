@@ -27,76 +27,92 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type label struct {
-	LabelName  []string
-	LabelValue []string
-}
-
-// promGauge metric for reporting the current total number which can be "add" or "delete"
+// promGauge promGauge for reporting the current total number which can be "add" or "delete"
 type promGauge struct {
-	label
-	Metric *prometheus.GaugeVec
+	labelsName []string
+	metric     *prometheus.GaugeVec
 }
 
 // Add add value of counter
 func (p *promGauge) Add(value int64) {
-	p.Metric.WithLabelValues(p.LabelValue...).Add(float64(value))
+	p.AddWithTags([]string{}, value)
+}
+
+// Add add value of counter with custom tags
+func (p *promGauge) AddWithTags(tagsValue []string, counterValue int64) {
+	p.metric.WithLabelValues(combineConfigTagsValue(tagsValue)...).Add(float64(counterValue))
 }
 
 // Inc add value of counter, value = 1
 func (p *promGauge) Inc() {
-	p.Metric.WithLabelValues(p.LabelValue...).Inc()
+	p.IncWithTags([]string{})
+}
+
+// Inc add value of counter with custom tags, value = 1
+func (p *promGauge) IncWithTags(tagsValue []string) {
+	p.metric.WithLabelValues(combineConfigTagsValue(tagsValue)...).Inc()
 }
 
 // Decrease decrease value of counter
 func (p *promGauge) Sub(value int64) {
-	p.Metric.WithLabelValues(p.LabelValue...).Add(-float64(value))
+	p.SubWithTags([]string{}, value)
+}
+
+// Decrease decrease value of counter with custom tags
+func (p *promGauge) SubWithTags(tagsValue []string, counterValue int64) {
+	p.metric.WithLabelValues(combineConfigTagsValue(tagsValue)...).Add(-float64(counterValue))
 }
 
 // Dec decrease value of counter, value = 1
 func (p *promGauge) Dec() {
-	p.Metric.WithLabelValues(p.LabelValue...).Dec()
+	p.DecWithTags([]string{})
 }
 
-// promMeter metric for reporting the rate number which only can be "add"
+// Dec decrease value of counter with custom tags, value = 1
+func (p *promGauge) DecWithTags(tagsValue []string) {
+	p.metric.WithLabelValues(combineConfigTagsValue(tagsValue)...).Dec()
+}
+
+// promMeter promMeter for reporting the rate number which only can be "add"
 // and the rate get by using like "rate(counter_name[5m])" in web query page ***/
 type promMeter struct {
-	label
-	Metric *prometheus.CounterVec
+	labelsName []string
+	metric     *prometheus.CounterVec
 }
 
 // Update the counter, add 1
 func (p *promMeter) Update() {
-	p.Metric.WithLabelValues(p.LabelValue...).Inc()
+	p.UpdateWithTags([]string{})
 }
 
-func registerPromGauge(name string, labelName []string, labelValue []string) *promGauge {
+// Update the counter with custom tags, add 1
+func (p *promMeter) UpdateWithTags(tags []string) {
+	p.metric.WithLabelValues(combineConfigTagsValue(tags)...).Inc()
+}
+
+func registerPromGauge(counterName string, labelsName []string) *promGauge {
+	labelsName = combineConfigTagsName(labelsName)
 	gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: name,
-	}, labelName)
+		Name: counterName,
+	}, labelsName)
 	prometheus.MustRegister(gauge)
 
 	return &promGauge{
-		label: label{
-			LabelName:  labelName,
-			LabelValue: labelValue,
-		},
-		Metric: gauge,
+		labelsName: labelsName,
+		metric:     gauge,
 	}
 }
 
-func registerPromMeter(name string, labelName []string, labelValue []string) *promMeter {
+func registerPromMeter(counterName string, labelsName []string) *promMeter {
+	labelsName = combineConfigTagsName(labelsName)
 	counter := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: name,
-	}, labelName)
+		Name: counterName,
+	}, labelsName)
 	prometheus.MustRegister(counter)
 
 	return &promMeter{
-		label: label{
-			LabelName:  labelName,
-			LabelValue: labelValue,
-		},
-		Metric: counter,
+		labelsName: labelsName,
+		metric:     counter,
 	}
 }
 

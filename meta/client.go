@@ -36,8 +36,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// declare perfcounters
-var tableWatcherEvictCount metrics.Gauge
+var zkRequestCount metrics.Meter
 
 var globalClusterManager *ClusterManager
 
@@ -66,7 +65,7 @@ type TableInfoWatcher struct {
 }
 
 func initClusterManager() {
-	tableWatcherEvictCount = metrics.RegisterGauge("table_watcher_cache_evict_count")
+	zkRequestCount = metrics.RegisterMeterWithTags("zk_request_count", []string{"table"})
 
 	zkAddrs := config.GlobalConfig.ZookeeperOpts.Address
 	zkConn, _, err := zk.Connect(config.GlobalConfig.ZookeeperOpts.Address,
@@ -77,7 +76,7 @@ func initClusterManager() {
 
 	tables := gcache.New(config.GlobalConfig.ZookeeperOpts.WatcherCount).LRU().EvictedFunc(func(key interface{}, value interface{}) {
 		value.(*TableInfoWatcher).ctx.cancel()
-		tableWatcherEvictCount.Inc()
+		logrus.Debugf("[%s] zk watcher is evicted", key.(string))
 	}).Build() // TODO(jiashuo1) consider set expire time
 	globalClusterManager = &ClusterManager{
 		ZkConn: zkConn,
@@ -86,14 +85,17 @@ func initClusterManager() {
 	}
 }
 
-func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
+// return (metaAddr, metaManager, error)
+func (m *ClusterManager) getMeta(table string) (string, *session.MetaManager, error) {
+	var addrs string
 	var meta *session.MetaManager
 
 	tableInfo, err := m.Tables.Get(table)
 	if err == nil {
+		addrs = tableInfo.(*TableInfoWatcher).metaAddrs
 		meta = m.Metas[tableInfo.(*TableInfoWatcher).metaAddrs]
 		if meta != nil {
-			return meta, nil
+			return addrs, meta, nil
 		}
 	}
 
@@ -105,28 +107,28 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 		tableInfo, err = m.newTableInfo(table)
 		if err != nil {
 			logrus.Errorf("[%s] failed to get cluster info: %s", table, err)
-			return nil, err
+			return "", nil, err
 		}
 		err = m.Tables.Set(table, tableInfo)
 		if err != nil {
 			logrus.Errorf("[%s] failed to update local cache cluster info: %s", table, err)
-			return nil, base.ERR_INVALID_DATA
+			return "", nil, base.ERR_INVALID_DATA
 		}
 	}
 	tableInfoW := tableInfo.(*TableInfoWatcher)
-	metaAddrs := tableInfoW.metaAddrs
-	meta = m.Metas[metaAddrs]
+	addrs = tableInfoW.metaAddrs
+	meta = m.Metas[addrs]
 	if meta == nil {
-		metaList, err := parseToMetaList(metaAddrs)
+		metaList, err := parseToMetaList(addrs)
 		if err != nil {
-			logrus.Errorf("[%s] cluster addr[%s] format is err: %s", table, metaAddrs, err)
-			return nil, base.ERR_INVALID_DATA
+			logrus.Errorf("[%s] cluster addr[%s] format is err: %s", table, addrs, err)
+			return "", nil, base.ERR_INVALID_DATA
 		}
 		meta = session.NewMetaManager(metaList, session.NewNodeSession)
-		m.Metas[metaAddrs] = meta
+		m.Metas[addrs] = meta
 	}
 
-	return meta, nil
+	return addrs, meta, nil
 }
 
 // get table cluster info and watch it based table name from zk
@@ -137,6 +139,8 @@ func (m *ClusterManager) getMeta(table string) (*session.MetaManager, error) {
 //                           "meta_addrs" : "metaAddr1,metaAddr2,metaAddr3"
 //                         }
 func (m *ClusterManager) newTableInfo(table string) (*TableInfoWatcher, error) {
+	zkRequestCount.UpdateWithTags([]string{table})
+
 	path := fmt.Sprintf("%s/%s", config.GlobalConfig.ZookeeperOpts.Root, table)
 	value, _, watcherEvent, err := m.ZkConn.GetW(path)
 	zkAddrs := config.GlobalConfig.ZookeeperOpts.Address
@@ -231,7 +235,7 @@ func parseToMetaList(metaAddrs string) ([]string, error) {
 //            /<table2> => {JSON}
 func parseToTableName(path string) (string, error) {
 	result := strings.Split(path, "/")
-	if len(result) != 3 {
+	if len(result) < 3 {
 		return "", fmt.Errorf("the path[%s] is invalid", path)
 	}
 
