@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 
 	"github.com/XiaoMi/pegasus-go-client/session"
-	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/pegasus-kv/thrift/lib/go/thrift"
 )
 
 // pegasusV1Codec implements pegasus-go-client.rpc.Codec
