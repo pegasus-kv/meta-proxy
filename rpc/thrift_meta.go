@@ -28,7 +28,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/pegasus-kv/thrift/lib/go/thrift"
 )
 
 // (needed to ensure safety because of naive import list construction.)
